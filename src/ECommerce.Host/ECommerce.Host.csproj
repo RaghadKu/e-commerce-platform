@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks\ECommerce.SharedKernel\ECommerce.SharedKernel.csproj" />
+    <ProjectReference Include="..\Modules\Users\ECommerce.Modules.Users\ECommerce.Modules.Users.csproj" />
+    <ProjectReference Include="..\Modules\Products\ECommerce.Modules.Products\ECommerce.Modules.Products.csproj" />
+    <ProjectReference Include="..\Modules\Orders\ECommerce.Modules.Orders\ECommerce.Modules.Orders.csproj" />
+    <ProjectReference Include="..\Modules\Notifications\ECommerce.Modules.Notifications\ECommerce.Modules.Notifications.csproj" />
+  </ItemGroup>
+
+</Project>
