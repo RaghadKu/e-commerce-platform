@@ -9,7 +9,7 @@ internal sealed class UsersDbContextFactory : IDesignTimeDbContextFactory<UsersD
     {
         var connectionString =
             Environment.GetEnvironmentVariable("ConnectionStrings__MainDb")
-            ?? "Server=DESKTOP-N4TUBDB;Database=MainDb;Trusted_Connection=True;TrustServerCertificate=True";
+            ?? "Server=localhost\\SQLEXPRESS;Database=MainDb;Trusted_Connection=True;TrustServerCertificate=True";
 
         var options = new DbContextOptionsBuilder<UsersDbContext>()
             .UseSqlServer(connectionString, sql =>
