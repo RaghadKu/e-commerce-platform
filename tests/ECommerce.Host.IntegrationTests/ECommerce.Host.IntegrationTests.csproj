@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ECommerce.Host\ECommerce.Host.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Products\ECommerce.Modules.Products\ECommerce.Modules.Products.csproj" />
   </ItemGroup>
 
 </Project>
