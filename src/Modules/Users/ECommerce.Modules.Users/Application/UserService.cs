@@ -14,7 +14,6 @@ internal sealed class UserService(UserManager<ApplicationUser> userManager) : IU
 {
     public async Task<UserDto> GetByIdAsync(Guid id, Guid requesterId, bool requesterIsAdmin)
     {
-        // Ownership check BEFORE the database lookup: a non-owner can't learn whether the id exists.
         if (id != requesterId && !requesterIsAdmin)
             throw new ForbiddenException("You do not have access to this user.");
 

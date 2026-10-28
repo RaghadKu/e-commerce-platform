@@ -2,7 +2,6 @@
 using ECommerce.Modules.Users.Application;
 using ECommerce.Modules.Users.Domain;
 using ECommerce.Modules.Users.Infrastructure;
-using ECommerce.SharedKernel.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +17,6 @@ public static class UsersModule
     public static IServiceCollection AddUsersModule(
         this IServiceCollection services, IConfiguration configuration)
     {
-        // Options are validated at startup: the app refuses to start with a missing/short JWT key.
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
             .ValidateDataAnnotations().ValidateOnStart();
