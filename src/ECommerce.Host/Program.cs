@@ -2,29 +2,47 @@ using ECommerce.Modules.Notifications;
 using ECommerce.Modules.Orders;
 using ECommerce.Modules.Products;
 using ECommerce.Modules.Users;
+using ECommerce.SharedKernel;
 using Microsoft.OpenApi.Models;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "E-Commerce Platform API", Version = "v1" });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Title = "E-Commerce Platform API",
-        Version = "v1"
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Paste the access token only (without the word 'Bearer')."
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            Array.Empty<string>()
+        }
     });
 });
 
 builder.Services.AddHealthChecks();
+builder.Services.AddSharedKernel();  
 
 builder.Services.AddUsersModule(builder.Configuration);
 builder.Services.AddProductsModule(builder.Configuration);
 builder.Services.AddOrdersModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 
-WebApplication app = builder.Build();
+var app = builder.Build();
+
+app.UseExceptionHandler();   
+app.UseStatusCodePages();    
 
 if (app.Environment.IsDevelopment())
 {
@@ -32,11 +50,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseAuthorization();
+app.UseAuthentication();     
+app.UseAuthorization();      
 
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-await app.RunAsync();
+app.Run();
 
 public partial class Program;
