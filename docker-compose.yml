@@ -22,7 +22,13 @@ services:
       dockerfile: Dockerfile
     container_name: ecommerce-host
     environment:
-      ASPNETCORE_ENVIRONMENT: Development  
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__MainDb: "Server=sqlserver;Database=MainDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: ecommerce-api
+      Jwt__Audience: ecommerce-clients
+      Seed__AdminEmail: ${SEED_ADMIN_EMAIL}
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD}
     ports:
       - "8080:8080"
     depends_on:
