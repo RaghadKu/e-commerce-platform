@@ -1,0 +1,20 @@
+$kind: collection
+description: |-
+  ## gRPC Inventory Service
+
+  This collection covers the **gRPC API for the Inventory Service** within the e-commerce platform. It targets the `inventory.v1.InventoryService` running on `localhost:5090` and provides ready-to-use requests for managing product stock levels throughout the order lifecycle.
+
+  ### Requests
+
+  | Request | RPC Method | Description |
+  |---|---|---|
+  | **Check Availability** | `CheckAvailability` | Query real-time stock levels for one or more products. Returns on-hand, reserved, and available quantities per product. |
+  | **Reserve Stock** | `ReserveStock` | Reserve stock for a given order. Accepts an order ID and a list of product/quantity lines. Returns a reservation status and any shortages. |
+  | **Release Stock** | `ReleaseStock` | Release previously reserved stock for an order (e.g. on cancellation). Returns a release status indicating whether the reservation was found and freed. |
+  | **Set Stock** | `SetStock` | Directly set the on-hand quantity for a product. Useful for seeding or correcting inventory levels. Returns the updated stock level. |
+
+  ### Usage Notes
+
+  - All requests use the **proto schema** defined in `src/Inventory/ECommerce.Inventory.Contracts/Protos/inventory.proto`.
+  - Each request includes a pre-filled message body with placeholder values (e.g. `<01>`, `<P>`) — replace these with real product or order IDs before sending.
+  - Each request has saved **examples** demonstrating expected request/response shapes.

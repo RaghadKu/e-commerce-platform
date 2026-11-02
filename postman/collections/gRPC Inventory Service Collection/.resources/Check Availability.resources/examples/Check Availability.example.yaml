@@ -1,0 +1,21 @@
+$kind: grpc-example
+request:
+  url: localhost:5090
+  methodPath: inventory.v1.InventoryService.CheckAvailability
+  methodDescriptor: CvICChJpbnZlbnRvcnlfdjEucHJvdG8SDGludmVudG9yeS52MSJmCgpTdG9ja0xldmVsEhYKCnByb2R1Y3RfaWQYASABKAlCAhABEhMKB29uX2hhbmQYAiABKAVCAhABEhQKCHJlc2VydmVkGAMgASgFQgIQARIVCglhdmFpbGFibGUYBCABKAVCAhABIjMKGENoZWNrQXZhaWxhYmlsaXR5UmVxdWVzdBIXCgtwcm9kdWN0X2lkcxgBIAMoCUICEAEiNwoZQ2hlY2tBdmFpbGFiaWxpdHlSZXNwb25zZRIaCgZsZXZlbHMYASADKAsyClN0b2NrTGV2ZWwyeAoQSW52ZW50b3J5U2VydmljZRJkChFDaGVja0F2YWlsYWJpbGl0eRImLmludmVudG9yeS52MS5DaGVja0F2YWlsYWJpbGl0eVJlcXVlc3QaJy5pbnZlbnRvcnkudjEuQ2hlY2tBdmFpbGFiaWxpdHlSZXNwb25zZQ==
+  message:
+    content: "{\r
+
+      \  \"product_ids\": [\"4dc44cd3-a86c-409f-58e9-08df35325a7b\"]\r
+
+      }"
+response:
+  code: 0
+  messages:
+    - id: 0aac655d-fb13-4fd9-ae9b-de5d30ace1fb
+      type: incoming
+      content: ""
+schema:
+  source: specification
+  specificationId: RDpcUHJvamVjdHNcZS1jb21tZXJjZS1wbGF0Zm9ybVxzcmNcSW52ZW50b3J5XEVDb21tZXJjZS5JbnZlbnRvcnkuQ29udHJhY3RzXFByb3Rvc1xpbnZlbnRvcnkucHJvdG8
+order: 1000

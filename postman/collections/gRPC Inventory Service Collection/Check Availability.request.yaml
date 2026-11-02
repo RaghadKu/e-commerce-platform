@@ -1,0 +1,22 @@
+$kind: grpc-request
+url: localhost:5090
+methodPath: inventory.v1.InventoryService.CheckAvailability
+methodDescriptor: CvYCChJpbnZlbnRvcnlfdjEucHJvdG8SDGludmVudG9yeS52MSJmCgpTdG9ja0xldmVsEhYKCnByb2R1Y3RfaWQYASABKAlCAhABEhMKB29uX2hhbmQYAiABKAVCAhABEhQKCHJlc2VydmVkGAMgASgFQgIQARIVCglhdmFpbGFibGUYBCABKAVCAhABIjMKGENoZWNrQXZhaWxhYmlsaXR5UmVxdWVzdBIXCgtwcm9kdWN0X2lkcxgBIAMoCUICEAEiOwoZQ2hlY2tBdmFpbGFiaWxpdHlSZXNwb25zZRIeCgZsZXZlbHMYASADKAsyClN0b2NrTGV2ZWxCAhABMngKEEludmVudG9yeVNlcnZpY2USZAoRQ2hlY2tBdmFpbGFiaWxpdHkSJi5pbnZlbnRvcnkudjEuQ2hlY2tBdmFpbGFiaWxpdHlSZXF1ZXN0GicuaW52ZW50b3J5LnYxLkNoZWNrQXZhaWxhYmlsaXR5UmVzcG9uc2U=
+message:
+  content: "{\r
+
+    \    \"product_ids\": [\r
+
+    \        \"<01>\",\r
+
+    \        \"<02>\"\r
+
+    \    ]\r
+
+    }"
+settings: {}
+schema:
+  source: specification
+  specificationId: ../src/Inventory/ECommerce.Inventory.Contracts/Protos/inventory.proto
+examples: .resources/Check Availability.resources/examples
+order: 1000

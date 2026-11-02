@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+option csharp_namespace = "ECommerce.Inventory.Contracts";
+package inventory.v1;
+
+service InventoryService {
+  rpc CheckAvailability (CheckAvailabilityRequest) returns (CheckAvailabilityResponse);
+  rpc ReserveStock      (ReserveStockRequest)      returns (ReserveStockResponse);
+  rpc ReleaseStock      (ReleaseStockRequest)      returns (ReleaseStockResponse);
+  rpc SetStock          (SetStockRequest)          returns (SetStockResponse);
+}
+
+message StockQuantity {
+	string product_id = 1;
+	int32 quantity = 2; 
+}
+
+message StockLevel {
+  string product_id = 1;
+  int32 on_hand = 2;
+  int32 reserved = 3;
+  int32 available = 4;
+}
+
+message CheckAvailabilityRequest  {
+	repeated string product_ids = 1; 
+}
+
+message CheckAvailabilityResponse {
+	repeated StockLevel levels = 1; 
+}
+
+enum ReserveStatus {
+  RESERVE_STATUS_UNSPECIFIED = 0;
+  RESERVE_STATUS_RESERVED = 1;
+  RESERVE_STATUS_INSUFFICIENT_STOCK = 2;
+  RESERVE_STATUS_ALREADY_RELEASED = 3;
+}
+
+message ReserveStockRequest  {
+	string order_id = 1;
+	repeated StockQuantity lines = 2; 
+}
+
+message StockShortage        {
+	string product_id = 1;
+	int32 requested = 2;
+	int32 available = 3; 
+}
+
+message ReserveStockResponse {
+	ReserveStatus status = 1;
+	repeated StockShortage shortages = 2;
+}
+
+enum ReleaseStatus {
+  RELEASE_STATUS_UNSPECIFIED = 0;
+  RELEASE_STATUS_RELEASED = 1;
+  RELEASE_STATUS_ALREADY_RELEASED = 2;
+  RELEASE_STATUS_NOT_FOUND = 3;
+}
+
+message ReleaseStockRequest  {
+	string order_id = 1; 
+}
+
+message ReleaseStockResponse {
+	ReleaseStatus status = 1; 
+}
+
+message SetStockRequest  {
+	string product_id = 1;
+	int32 quantity_on_hand = 2; 
+}
+
+message SetStockResponse {
+	StockLevel level = 1; 
+}

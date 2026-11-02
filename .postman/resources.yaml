@@ -1,0 +1,5 @@
+workspace:
+  id: 3e7e330a-0223-4084-8dd1-a8a705e0238e
+localResources:
+  specs:
+    - ../src/Inventory/ECommerce.Inventory.Contracts/Protos/inventory.proto

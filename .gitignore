@@ -484,3 +484,4 @@ $RECYCLE.BIN/
 *.swp
 /src/ECommerce.Host/appsettings.Development.json
 uploads/
+/src/Inventory/ECommerce.Inventory.Service/appsettings.Development.json
