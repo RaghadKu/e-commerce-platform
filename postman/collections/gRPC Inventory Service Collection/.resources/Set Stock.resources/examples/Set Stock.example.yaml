@@ -1,0 +1,19 @@
+$kind: grpc-example
+request:
+  url: localhost:5090
+  methodPath: inventory.v1.InventoryService.SetStock
+  methodDescriptor: CocDChJpbnZlbnRvcnlfdjEucHJvdG8SDGludmVudG9yeS52MSJmCgpTdG9ja0xldmVsEhYKCnByb2R1Y3RfaWQYASABKAlCAhABEhMKB29uX2hhbmQYAiABKAVCAhABEhQKCHJlc2VydmVkGAMgASgFQgIQARIVCglhdmFpbGFibGUYBCABKAVCAhABIkcKD1NldFN0b2NrUmVxdWVzdBIWCgpwcm9kdWN0X2lkGAEgASgJQgIQARIcChBxdWFudGl0eV9vbl9oYW5kGAIgASgFQgIQASIxChBTZXRTdG9ja1Jlc3BvbnNlEh0KBWxldmVsGAEgASgLMgpTdG9ja0xldmVsQgIQATJdChBJbnZlbnRvcnlTZXJ2aWNlEkkKCFNldFN0b2NrEh0uaW52ZW50b3J5LnYxLlNldFN0b2NrUmVxdWVzdBoeLmludmVudG9yeS52MS5TZXRTdG9ja1Jlc3BvbnNlQiCqAh1FQ29tbWVyY2UuSW52ZW50b3J5LkNvbnRyYWN0cw==
+  message:
+    content: "{\r
+
+      \    \"product_id\":\"4dc44cd3-a86c-409f-58e9-08df35325a7b\",\r
+
+      \    \"quantity_on_hand\":5\r
+
+      }"
+response:
+  code: 0
+  messages: []
+schema:
+  source: auto
+order: 1000

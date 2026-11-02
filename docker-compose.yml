@@ -35,5 +35,19 @@ services:
       sqlserver:
         condition: service_healthy
 
+  inventory:
+    build:
+      context: .
+      dockerfile: Dockerfile.inventory
+    container_name: ecommerce-inventory
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__InventoryDb: "Server=sqlserver;Database=InventoryDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+    ports:
+      - "5090:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
 volumes:
   sqlserver-data:

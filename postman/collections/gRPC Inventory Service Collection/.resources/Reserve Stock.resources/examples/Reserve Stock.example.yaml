@@ -1,0 +1,37 @@
+$kind: grpc-example
+request:
+  url: localhost:5090
+  methodPath: inventory.v1.InventoryService.ReserveStock
+  methodDescriptor: CpAFChJpbnZlbnRvcnlfdjEucHJvdG8SDGludmVudG9yeS52MSI9Cg1TdG9ja1F1YW50aXR5EhYKCnByb2R1Y3RfaWQYASABKAlCAhABEhQKCHF1YW50aXR5GAIgASgFQgIQASJNChNSZXNlcnZlU3RvY2tSZXF1ZXN0EhQKCG9yZGVyX2lkGAEgASgJQgIQARIgCgVsaW5lcxgCIAMoCzINU3RvY2tRdWFudGl0eUICEAEiVQoNU3RvY2tTaG9ydGFnZRIWCgpwcm9kdWN0X2lkGAEgASgJQgIQARIVCglyZXF1ZXN0ZWQYAiABKAVCAhABEhUKCWF2YWlsYWJsZRgDIAEoBUICEAEiXwoUUmVzZXJ2ZVN0b2NrUmVzcG9uc2USIQoGc3RhdHVzGAEgASgOMg1SZXNlcnZlU3RhdHVzQgIQARIkCglzaG9ydGFnZXMYAiADKAsyDVN0b2NrU2hvcnRhZ2VCAhABKpgBCg1SZXNlcnZlU3RhdHVzEh4KGlJFU0VSVkVfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXUkVTRVJWRV9TVEFUVVNfUkVTRVJWRUQQARIlCiFSRVNFUlZFX1NUQVRVU19JTlNVRkZJQ0lFTlRfU1RPQ0sQAhIjCh9SRVNFUlZFX1NUQVRVU19BTFJFQURZX1JFTEVBU0VEEAMyaQoQSW52ZW50b3J5U2VydmljZRJVCgxSZXNlcnZlU3RvY2sSIS5pbnZlbnRvcnkudjEuUmVzZXJ2ZVN0b2NrUmVxdWVzdBoiLmludmVudG9yeS52MS5SZXNlcnZlU3RvY2tSZXNwb25zZUIgqgIdRUNvbW1lcmNlLkludmVudG9yeS5Db250cmFjdHM=
+  message:
+    content: "{\r
+
+      \    \"order_id\":\"<O1>\",\r
+
+      \    \"lines\":[\r
+
+      \        {\r
+
+      \            \"product_id\":\"<P>\",\r
+
+      \            \"quantity\":4\r
+
+      \        },\r
+
+      \        {\r
+
+      \            \"product_id\":\"<P>\",\r
+
+      \            \"quantity\":4\r
+
+      \        }\r
+
+      \    ]\r
+
+      }"
+response:
+  code: 0
+  messages: []
+schema:
+  source: auto
+order: 1000

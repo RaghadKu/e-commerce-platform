@@ -1,0 +1,29 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Give NuGet more opportunities to recover from network interruptions
+ENV NUGET_ENHANCED_MAX_NETWORK_TRY_COUNT=10
+ENV NUGET_ENHANCED_NETWORK_RETRY_DELAY_MILLISECONDS=5000
+
+COPY . .
+
+RUN dotnet restore src/Inventory/ECommerce.Inventory.Service/ECommerce.Inventory.Service.csproj \
+    --disable-parallel
+
+RUN dotnet publish src/Inventory/ECommerce.Inventory.Service/ECommerce.Inventory.Service.csproj \
+    -c Release \
+    -o /app/publish \
+    --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+
+COPY --from=build /app/publish .
+
+ENV ASPNETCORE_HTTP_PORTS=8080
+
+EXPOSE 8080
+
+USER app
+
+ENTRYPOINT ["dotnet", "ECommerce.Inventory.Service.dll"]

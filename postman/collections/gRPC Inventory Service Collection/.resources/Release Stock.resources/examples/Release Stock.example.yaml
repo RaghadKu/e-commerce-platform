@@ -1,0 +1,17 @@
+$kind: grpc-example
+request:
+  url: localhost:5090
+  methodPath: inventory.v1.InventoryService.ReleaseStock
+  methodDescriptor: CqkDChJpbnZlbnRvcnlfdjEucHJvdG8SDGludmVudG9yeS52MSIrChNSZWxlYXNlU3RvY2tSZXF1ZXN0EhQKCG9yZGVyX2lkGAEgASgJQgIQASI5ChRSZWxlYXNlU3RvY2tSZXNwb25zZRIhCgZzdGF0dXMYASABKA4yDVJlbGVhc2VTdGF0dXNCAhABKo8BCg1SZWxlYXNlU3RhdHVzEh4KGlJFTEVBU0VfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXUkVMRUFTRV9TVEFUVVNfUkVMRUFTRUQQARIjCh9SRUxFQVNFX1NUQVRVU19BTFJFQURZX1JFTEVBU0VEEAISHAoYUkVMRUFTRV9TVEFUVVNfTk9UX0ZPVU5EEAMyaQoQSW52ZW50b3J5U2VydmljZRJVCgxSZWxlYXNlU3RvY2sSIS5pbnZlbnRvcnkudjEuUmVsZWFzZVN0b2NrUmVxdWVzdBoiLmludmVudG9yeS52MS5SZWxlYXNlU3RvY2tSZXNwb25zZUIgqgIdRUNvbW1lcmNlLkludmVudG9yeS5Db250cmFjdHM=
+  message:
+    content: "{\r
+
+      \    \"order_id\":\"77519cf7-6151-4e50-901a-78b61405ffbb\"\r
+
+      }"
+response:
+  code: 0
+  messages: []
+schema:
+  source: auto
+order: 1000
