@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using ECommerce.Modules.Orders.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ECommerce.Modules.Orders;
@@ -9,6 +11,19 @@ public static class OrdersModule
         this IServiceCollection services, IConfiguration configuration)
     {
         // Services will be registered here.
+        services.AddHttpContextAccessor();
+
+        services.AddDbContext<OrdersDbContext>((sp, options) =>
+        {
+            var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("MainDb")
+                ?? throw new InvalidOperationException("Connection string 'MainDb' is not configured.");
+
+            options.UseSqlServer(connectionString, sql
+                => sql.MigrationsHistoryTable("__EFMigrationsHistory", OrdersDbContext.Schema));
+        });
+
+        services.AddHostedService<OrdersDbInitializer>();
+
         return services;
     }
 }
