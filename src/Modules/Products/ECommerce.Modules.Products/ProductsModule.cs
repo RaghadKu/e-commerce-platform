@@ -1,4 +1,5 @@
-﻿using ECommerce.Modules.Products.Application;
+﻿using ECommerce.Inventory.Contracts;
+using ECommerce.Modules.Products.Application;
 using ECommerce.Modules.Products.Application.Services;
 using ECommerce.Modules.Products.Infrastructure;
 using ECommerce.Modules.Products.PublicApi;
@@ -26,6 +27,12 @@ public static class ProductsModule
                 => sql.MigrationsHistoryTable("__EFMigrationsHistory", ProductsDbContext.Schema));
         });
 
+        services.AddGrpcClient<InventoryService.InventoryServiceClient>(o =>
+            o.Address = new Uri(configuration["Inventory:GrpcUrl"]
+                ?? throw new InvalidOperationException("Inventory:GrpcUrl is not configured.")));
+        services.AddScoped<IInventoryClient, InventoryClient>();
+
+        services.AddScoped<IInventoryClient, InventoryClient>();
         services.AddSingleton<IImageStorage, LocalImageStorage>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, ProductService>();

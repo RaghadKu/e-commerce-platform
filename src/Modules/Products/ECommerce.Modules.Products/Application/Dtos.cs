@@ -55,7 +55,21 @@ public sealed record ProductDto(
     string CategoryName,
     IReadOnlyList<ProductImageDto> Images,
     DateTime CreatedAtUtc,
-    DateTime UpdatedAtUtc);
+    DateTime UpdatedAtUtc
+    );
+
+public sealed record ProductDetailsDto(
+    Guid Id,
+    string Name,
+    string? Description,
+    decimal Price,
+    string Sku,
+    Guid CategoryId,
+    string CategoryName,
+    IReadOnlyList<ProductImageDto> Images,
+    DateTime CreatedAtUtc,
+    DateTime UpdatedAtUtc,
+    int? AvailableQuantity = null);
 
 public sealed record ProductImageFile(Stream Content, string ContentType);
 

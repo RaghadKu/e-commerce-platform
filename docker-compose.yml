@@ -22,6 +22,7 @@ services:
       dockerfile: Dockerfile
     container_name: ecommerce-host
     environment:
+      Inventory__GrpcUrl: http://inventory:8080
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__MainDb: "Server=sqlserver;Database=MainDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
       Jwt__Key: ${JWT_KEY}
