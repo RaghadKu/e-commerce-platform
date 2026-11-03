@@ -11,7 +11,8 @@ public sealed class ForbiddenException(string detail) : AppException(403, "Forbi
 public sealed class NotFoundException(string detail) : AppException(404, "Not Found", detail);
 public sealed class ConflictException(string detail) : AppException(409, "Conflict", detail);
 public sealed class LockedException(string detail) : AppException(423, "Locked", detail);
-
+public sealed class ServiceUnavailableException(string detail) : AppException(503, "Service Unavailable", detail);
+public sealed class GatewayTimeoutException(string detail) : AppException(504, "Gateway Timeout", detail);
 public sealed class ValidationFailedException(IDictionary<string, string[]> errors)
     : AppException(400, "One or more validation errors occurred.", "See the 'errors' property for details.")
 {

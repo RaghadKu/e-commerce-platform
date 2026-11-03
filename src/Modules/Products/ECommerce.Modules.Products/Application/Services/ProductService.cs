@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Modules.Products.Application.Services;
 
-internal class ProductService(ProductsDbContext db) : IProductService
+internal class ProductService(ProductsDbContext db, IInventoryClient inventory) : IProductService
 {
     public async Task<PagedResult<ProductDto>> GetAllAsync(ProductQuery query, CancellationToken ct)
     {
@@ -34,12 +34,14 @@ internal class ProductService(ProductsDbContext db) : IProductService
         return new PagedResult<ProductDto>(items.Select(p => p.ToDto()).ToList(), page, pageSize, total);
     }
 
-    public async Task<ProductDto> GetByIdAsync(Guid id, CancellationToken ct)
+    public async Task<ProductDetailsDto> GetByIdAsync(Guid id, CancellationToken ct)
     {
-        return (await db.Products.AsNoTracking()
+        var product = (await db.Products.AsNoTracking()
             .Include(p => p.Category).Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == id, ct)
-            ?? throw NotFound()).ToDto();
+            ?? throw NotFound()).ToDetailsDto();
+
+        return product with { AvailableQuantity = await inventory.GetAvailableAsync(id, ct) };
     }
     public async Task<ProductDto> CreateAsync(ProductRequest request, CancellationToken ct)
     {

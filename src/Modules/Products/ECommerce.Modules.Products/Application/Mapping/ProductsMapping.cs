@@ -21,4 +21,11 @@ internal static class ProductsMapping
             p.Images.OrderBy(i => i.CreatedAtUtc).Select(i => i.ToDto()).ToList(),
             p.CreatedAtUtc, p.UpdatedAtUtc);
     }
+    public static ProductDetailsDto ToDetailsDto(this Product p)
+    {
+        return new(
+            p.Id, p.Name, p.Description, p.Price, p.Sku, p.CategoryId, p.Category.Name,
+            p.Images.OrderBy(i => i.CreatedAtUtc).Select(i => i.ToDto()).ToList(),
+            p.CreatedAtUtc, p.UpdatedAtUtc);
+    }
 }

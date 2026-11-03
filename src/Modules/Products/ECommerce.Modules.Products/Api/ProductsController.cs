@@ -20,7 +20,7 @@ public sealed class ProductsController(IProductService products) : ControllerBas
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
-    public async Task<ActionResult<ProductDto>> GetById(Guid id, CancellationToken ct)
+    public async Task<ActionResult<ProductDetailsDto>> GetById(Guid id, CancellationToken ct)
     {
         return await products.GetByIdAsync(id, ct);
     }
