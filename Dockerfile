@@ -6,10 +6,12 @@ ENV NUGET_ENHANCED_NETWORK_RETRY_DELAY_MILLISECONDS=5000
 
 COPY . .
 
-RUN dotnet restore src/ECommerce.Host/ECommerce.Host.csproj \
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore src/ECommerce.Host/ECommerce.Host.csproj \
     --disable-parallel
 
-RUN dotnet publish src/ECommerce.Host/ECommerce.Host.csproj \
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish src/ECommerce.Host/ECommerce.Host.csproj \
     -c Release \
     -o /app/publish \
     --no-restore
