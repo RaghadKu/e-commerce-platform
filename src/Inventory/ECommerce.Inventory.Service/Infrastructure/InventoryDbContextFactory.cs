@@ -9,7 +9,7 @@ internal sealed class InventoryDbContextFactory : IDesignTimeDbContextFactory<In
     {
         var connectionString =
             Environment.GetEnvironmentVariable("ConnectionStrings__MainDb")
-            ?? "Server=localhost\\SQLEXPRESS;Database=MainDb;Trusted_Connection=True;TrustServerCertificate=True";
+            ?? "Server=localhost\\SQLEXPRESS;Database=InventoryDb;Trusted_Connection=True;TrustServerCertificate=True";
 
         return new InventoryDbContext(new DbContextOptionsBuilder<InventoryDbContext>()
             .UseSqlServer(connectionString).Options);
