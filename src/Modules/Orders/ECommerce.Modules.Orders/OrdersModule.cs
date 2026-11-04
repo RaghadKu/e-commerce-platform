@@ -1,4 +1,5 @@
-﻿using ECommerce.Modules.Orders.Infrastructure;
+﻿using ECommerce.Modules.Orders.Application.Services;
+using ECommerce.Modules.Orders.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +13,7 @@ public static class OrdersModule
     {
         // Services will be registered here.
         services.AddHttpContextAccessor();
-
+        services.AddScoped<IOrderService, OrderService>();
         services.AddDbContext<OrdersDbContext>((sp, options) =>
         {
             var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("MainDb")

@@ -1,8 +1,5 @@
 ﻿using ECommerce.Modules.Orders.Application;
 using ECommerce.Modules.Orders.Application.Services;
-using ECommerce.Modules.Products.Application;
-using ECommerce.SharedKernel.Pagination;
-using ECommerce.SharedKernel.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ECommerce.Modules.Orders.Api;
 
 [ApiController]
+[Authorize]
 [Route("api/orders")]
 public class OrdersController(IOrderService orderService) : ControllerBase
 {
