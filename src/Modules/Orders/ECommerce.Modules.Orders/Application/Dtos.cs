@@ -12,7 +12,7 @@ public class OrderDto
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public List<OrderItemDto> Items { get; set; } = [];
-    public OrderStatus Status { get; set; }
+    public string Status { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 
@@ -23,7 +23,7 @@ public class OrderDto
             Id = order.Id,
             UserId = order.UserId,
             Items = order.Items.Select(i => OrderItemDto.Create(i)).ToList(),
-            Status = order.Status,
+            Status = order.Status.ToString(),
             CreatedAtUtc = order.CreatedAtUtc,
             UpdatedAtUtc = order.UpdatedAtUtc
         };
