@@ -2,6 +2,10 @@
 
   <ItemGroup>
 	<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.22">
+	  <PrivateAssets>all</PrivateAssets>
+	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	</PackageReference>
     <ProjectReference Include="..\..\..\BuildingBlocks\ECommerce.SharedKernel\ECommerce.SharedKernel.csproj" />
     <ProjectReference Include="..\..\Products\ECommerce.Modules.Products\ECommerce.Modules.Products.csproj" />
     <ProjectReference Include="..\..\..\Inventory\ECommerce.Inventory.Contracts\ECommerce.Inventory.Contracts.csproj" />

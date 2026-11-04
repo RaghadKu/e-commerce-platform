@@ -1,12 +1,4 @@
-﻿using ECommerce.Modules.Orders.Domain;
-using ECommerce.Modules.Products.Application;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ECommerce.Modules.Orders.Application.Services;
+﻿namespace ECommerce.Modules.Orders.Application.Services;
 
 public interface IOrderService
 {
