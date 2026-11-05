@@ -95,6 +95,17 @@ internal class ProductService(ProductsDbContext db, IInventoryClient inventory) 
         await db.SaveOrConflictAsync(ct);
         return product.ToDto();
     }
+    public async Task<ProductStockDto> UpdateStockAsync(Guid id, StockRequest request, CancellationToken ct)
+    {
+        var product = await db.Products.Include(p => p.Category).Include(p => p.Images)
+                  .FirstOrDefaultAsync(p => p.Id == id, ct)
+              ?? throw NotFound();
+
+
+        var stock = await inventory.SetStockAsync(id, request.QuantityOnHand!.Value,ct);
+
+        return new ProductStockDto(id, product.Name, product.Sku, stock.OnHand, stock.Reserved, stock.Available);
+    }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct)
     {

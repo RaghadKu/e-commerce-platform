@@ -20,6 +20,8 @@ public sealed class ProductsController(IProductService products) : ControllerBas
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status504GatewayTimeout, "application/problem+json")]
     public async Task<ActionResult<ProductDetailsDto>> GetById(Guid id, CancellationToken ct)
     {
         return await products.GetByIdAsync(id, ct);
@@ -43,6 +45,18 @@ public sealed class ProductsController(IProductService products) : ControllerBas
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
     public async Task<ActionResult<ProductDto>> Update(Guid id, ProductRequest request, CancellationToken ct)
         => await products.UpdateAsync(id, request, ct);
+
+    [HttpPut("{id:guid}/stock")]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status504GatewayTimeout, "application/problem+json")]
+    public async Task<ActionResult<ProductStockDto>> UpdateStock(Guid id, StockRequest request, CancellationToken ct)
+        => await products.UpdateStockAsync(id, request, ct);
 
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = AppRoles.Admin)]

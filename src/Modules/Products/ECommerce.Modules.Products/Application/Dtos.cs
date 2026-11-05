@@ -29,7 +29,11 @@ public sealed class ProductRequest
 
     public Guid CategoryId { get; init; }
 }
-
+public sealed class StockRequest
+{
+    [Required,Range(0, 100_000)]
+    public int? QuantityOnHand { get; init; }
+}
 public sealed class ProductQuery
 {
     public Guid? CategoryId { get; init; }
@@ -70,7 +74,15 @@ public sealed record ProductDetailsDto(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
     int? AvailableQuantity = null);
+public sealed record StockLevelDto(Guid ProductId, int OnHand, int Reserved, int Available);
 
+public sealed record ProductStockDto(
+    Guid ProductId,
+    string Name,
+    string Sku,
+    int OnHand,
+    int Reserved,
+    int Available);
 public sealed record ProductImageFile(Stream Content, string ContentType);
 
 #endregion
