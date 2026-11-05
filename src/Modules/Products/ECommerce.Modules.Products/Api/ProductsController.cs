@@ -2,6 +2,7 @@
 using ECommerce.Modules.Products.Application.Services;
 using ECommerce.SharedKernel.Pagination;
 using ECommerce.SharedKernel.Security;
+using ECommerce.SharedKernel.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,7 @@ public sealed class ProductsController(IProductService products) : ControllerBas
     }
 
     [HttpGet("{id:guid}")]
+    [ETag]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     public async Task<ActionResult<ProductDetailsDto>> GetById(Guid id, CancellationToken ct)
     {
