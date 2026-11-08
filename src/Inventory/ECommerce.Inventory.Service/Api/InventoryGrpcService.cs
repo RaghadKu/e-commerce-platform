@@ -4,7 +4,8 @@ using Grpc.Core;
 
 namespace ECommerce.Inventory.Service.Api;
 
-internal sealed class InventoryGrpcService(StockManager stock) : InventoryService.InventoryServiceBase
+internal sealed class InventoryGrpcService(
+    StockManager stock) : InventoryService.InventoryServiceBase
 {
     private const int MaxItems = 100;
     private const int MaxQuantity = 100_000;
@@ -70,6 +71,35 @@ internal sealed class InventoryGrpcService(StockManager stock) : InventoryServic
         var level = (await stock.CheckAsync([productId], context.CancellationToken)).Single();
 
         return new SetStockResponse { Level = ToMessage(level) };
+    }
+
+    public override async Task<SeedStockResponse> SeedStock(
+        SeedStockRequest request,
+        ServerCallContext context)
+    {
+        var productIds = new List<Guid>();
+
+        foreach (var id in request.ProductIds)
+        {
+            if (!Guid.TryParse(id, out var productId))
+            {
+                throw new RpcException(
+                    new Status(
+                        StatusCode.InvalidArgument,
+                        $"Invalid product ID: {id}"));
+            }
+
+            productIds.Add(productId);
+        }
+
+        var createdCount = await stock.SeedMissingProductsAsync(
+            productIds,
+            context.CancellationToken);
+
+        return new SeedStockResponse
+        {
+            CreatedCount = createdCount
+        };
     }
 
     private static StockLevel ToMessage(StockSnapshot s) => new()

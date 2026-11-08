@@ -7,8 +7,9 @@ internal sealed class InventoryDbInitializer(IServiceScopeFactory scopeFactory) 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<InventoryDbContext>()
-            .Database.MigrateAsync(cancellationToken);
+        var service = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
+
+        await service.Database.MigrateAsync(cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

@@ -7,6 +7,10 @@
     <ProjectReference Include="..\..\Users\ECommerce.Modules.Users\ECommerce.Modules.Users.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Api\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
