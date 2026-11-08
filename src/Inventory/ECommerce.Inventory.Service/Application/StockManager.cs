@@ -80,17 +80,6 @@ internal sealed class StockManager(InventoryDbContext db)
         return new ReserveResult(ReserveStatus.Reserved, []);
     }
 
-    private async Task<IReadOnlyList<Shortage>> ShortagesAsync(
-        IReadOnlyList<(Guid ProductId, int Quantity)> lines, CancellationToken ct)
-    {
-        var levels = (await CheckAsync(lines.Select(l => l.ProductId).ToList(), ct)).ToDictionary(l => l.ProductId);
-
-        return lines
-            .Select(l => new Shortage(l.ProductId, l.Quantity, levels[l.ProductId].OnHand - levels[l.ProductId].Reserved))
-            .Where(s => s.Available < s.Requested)
-            .ToList();
-    }
-
     public async Task<ReleaseStatus> ReleaseAsync(Guid orderId, CancellationToken ct)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -174,6 +163,53 @@ internal sealed class StockManager(InventoryDbContext db)
             db.ChangeTracker.Clear();
             return await SetStockAsync(productId, quantity, ct);
         }
+    }
+
+    public async Task<int> SeedMissingProductsAsync(
+        IReadOnlyCollection<Guid> productIds,
+        CancellationToken ct)
+    {
+        var createdCount = 0;
+
+        foreach (var batch in productIds.Distinct().Chunk(500))
+        {
+            var existingIds = await db.StockItems
+                .Where(s => batch.Contains(s.ProductId))
+                .Select(s => s.ProductId)
+                .ToListAsync(ct);
+
+            var existingSet = existingIds.ToHashSet();
+
+            var newItems = batch
+                .Where(id => !existingSet.Contains(id))
+                .Select(id => new StockItem
+                {
+                    ProductId = id,
+                    QuantityOnHand = Random.Shared.Next(10, 101),
+                    QuantityReserved = 0
+                })
+                .ToList();
+
+            if (newItems.Count == 0)
+                continue;
+
+            db.StockItems.AddRange(newItems);
+
+            createdCount += await db.SaveChangesAsync(ct);
+        }
+
+        return createdCount;
+    }
+
+    private async Task<IReadOnlyList<Shortage>> ShortagesAsync(
+        IReadOnlyList<(Guid ProductId, int Quantity)> lines, CancellationToken ct)
+    {
+        var levels = (await CheckAsync(lines.Select(l => l.ProductId).ToList(), ct)).ToDictionary(l => l.ProductId);
+
+        return lines
+            .Select(l => new Shortage(l.ProductId, l.Quantity, levels[l.ProductId].OnHand - levels[l.ProductId].Reserved))
+            .Where(s => s.Available < s.Requested)
+            .ToList();
     }
 
     private static bool IsUniqueViolation(DbUpdateException ex) =>

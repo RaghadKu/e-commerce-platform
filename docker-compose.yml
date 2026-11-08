@@ -43,6 +43,7 @@ services:
       Jwt__Audience: ecommerce-clients
       Seed__AdminEmail: ${SEED_ADMIN_EMAIL}
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD}
+      Seed__CustomerPassword: ${SEED_CUSTOMER_PASSWORD}
     ports:
       - "8080:8080"
     depends_on:

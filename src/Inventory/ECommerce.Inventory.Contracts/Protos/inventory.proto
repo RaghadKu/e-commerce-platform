@@ -8,6 +8,8 @@ service InventoryService {
   rpc ReserveStock      (ReserveStockRequest)      returns (ReserveStockResponse);
   rpc ReleaseStock      (ReleaseStockRequest)      returns (ReleaseStockResponse);
   rpc SetStock          (SetStockRequest)          returns (SetStockResponse);
+
+  rpc SeedStock         (SeedStockRequest)         returns (SeedStockResponse);
 }
 
 message StockQuantity {
@@ -75,4 +77,12 @@ message SetStockRequest  {
 
 message SetStockResponse {
 	StockLevel level = 1; 
+}
+
+message SeedStockRequest {
+  repeated string product_ids = 1;
+}
+
+message SeedStockResponse {
+  int32 created_count = 1;
 }

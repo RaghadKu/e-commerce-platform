@@ -83,6 +83,8 @@ public static class UsersModule
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddHostedService<UsersDbInitializer>();
+        services.AddHostedService<AdminsDbSeeder>();
+        services.AddScoped<IUsersDbSeeder, UsersCustomerSeeder>();
 
         return services;
     }
