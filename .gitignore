@@ -485,3 +485,4 @@ $RECYCLE.BIN/
 /src/ECommerce.Host/appsettings.Development.json
 uploads/
 /src/Inventory/ECommerce.Inventory.Service/appsettings.Development.json
+/policy.yaml

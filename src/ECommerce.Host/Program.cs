@@ -1,3 +1,5 @@
+
+using ECommerce.Host.Seeders;
 using ECommerce.Modules.Notifications;
 using ECommerce.Modules.Orders;
 using ECommerce.Modules.Products;
@@ -11,7 +13,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "E-Commerce Platform API", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "E-Commerce Platform API",
+        Version = "v1"
+    });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -22,27 +28,55 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Description = "Paste the access token only (without the word 'Bearer')."
     });
+
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
             Array.Empty<string>()
         }
     });
 });
 
 builder.Services.AddHealthChecks();
-builder.Services.AddSharedKernel();  
+builder.Services.AddSharedKernel();
 
 builder.Services.AddUsersModule(builder.Configuration);
 builder.Services.AddProductsModule(builder.Configuration);
 builder.Services.AddOrdersModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 
+builder.Services.AddScoped<DevelopmentDataSeeder>();
+
 var app = builder.Build();
 
-app.UseExceptionHandler();   
-app.UseStatusCodePages();    
+if (builder.Configuration.GetValue<bool>("seed-catalog"))
+{
+    if (!app.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException(
+            "Database seeding is only allowed in Development.");
+    }
+
+    await using var scope = app.Services.CreateAsyncScope();
+
+    var seeder = scope.ServiceProvider
+        .GetRequiredService<DevelopmentDataSeeder>();
+
+    await seeder.SeedAsync(CancellationToken.None);
+
+    return;
+}
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {
@@ -50,8 +84,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseAuthentication();     
-app.UseAuthorization();      
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/health");

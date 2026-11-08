@@ -2,6 +2,7 @@
 using ECommerce.Modules.Products.Application;
 using ECommerce.Modules.Products.Application.Services;
 using ECommerce.Modules.Products.Infrastructure;
+using ECommerce.Modules.Products.Infrastructure.Seeders;
 using ECommerce.Modules.Products.PublicApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -30,7 +31,6 @@ public static class ProductsModule
         services.AddGrpcClient<InventoryService.InventoryServiceClient>(o =>
             o.Address = new Uri(configuration["Inventory:GrpcUrl"]
                 ?? throw new InvalidOperationException("Inventory:GrpcUrl is not configured.")));
-        services.AddScoped<IInventoryClient, InventoryClient>();
 
         services.AddScoped<IInventoryClient, InventoryClient>();
         services.AddSingleton<IImageStorage, LocalImageStorage>();
@@ -39,6 +39,9 @@ public static class ProductsModule
         services.AddScoped<IProductImageService, ProductImageService>();
         services.AddScoped<IProductCatalog, ProductCatalog>();
         services.AddHostedService<ProductsDbInitializer>();
+
+        services.AddScoped<ICategoriesDbSeeder, CategoriesDbSeeder>();
+        services.AddScoped<IProductsDbSeeder, ProductsDbSeeder>();
 
         return services;
     }
