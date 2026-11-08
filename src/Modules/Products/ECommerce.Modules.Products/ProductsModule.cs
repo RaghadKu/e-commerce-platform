@@ -1,5 +1,6 @@
 ﻿using ECommerce.Inventory.Contracts;
 using ECommerce.Modules.Products.Application;
+using ECommerce.Modules.Products.Application.Caching;
 using ECommerce.Modules.Products.Application.Services;
 using ECommerce.Modules.Products.Infrastructure;
 using ECommerce.Modules.Products.PublicApi;
@@ -36,6 +37,7 @@ public static class ProductsModule
         services.AddSingleton<IImageStorage, LocalImageStorage>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, ProductService>();
+        services.Decorate<IProductService, CachedProductService>();
         services.AddScoped<IProductImageService, ProductImageService>();
         services.AddScoped<IProductCatalog, ProductCatalog>();
         services.AddHostedService<ProductsDbInitializer>();

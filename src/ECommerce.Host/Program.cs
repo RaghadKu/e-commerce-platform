@@ -1,3 +1,4 @@
+using ECommerce.Host.Middlewares;
 using ECommerce.Modules.Notifications;
 using ECommerce.Modules.Orders;
 using ECommerce.Modules.Products;
@@ -32,7 +33,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddHealthChecks();
-builder.Services.AddSharedKernel();  
+builder.Services.AddSharedKernel(builder.Configuration);  
 
 builder.Services.AddUsersModule(builder.Configuration);
 builder.Services.AddProductsModule(builder.Configuration);
@@ -51,7 +52,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthentication();     
-app.UseAuthorization();      
+app.UseAuthorization();
+
+app.UseMiddleware<RequestTimingMiddleware>();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
