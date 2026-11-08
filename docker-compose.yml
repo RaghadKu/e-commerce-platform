@@ -16,6 +16,18 @@ services:
       retries: 10
       start_period: 20s
 
+  redis:
+    image: redis:7.0.12-alpine
+    container_name: ecommerce-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   host:
     build:
       context: .
@@ -25,6 +37,7 @@ services:
       Inventory__GrpcUrl: http://inventory:8080
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__MainDb: "Server=sqlserver;Database=MainDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: ecommerce-api
       Jwt__Audience: ecommerce-clients
@@ -36,6 +49,9 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+        
 
   inventory:
     build:
