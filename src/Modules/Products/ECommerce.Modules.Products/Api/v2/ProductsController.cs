@@ -1,0 +1,75 @@
+﻿using Asp.Versioning;
+using ECommerce.Modules.Products.Application;
+using ECommerce.Modules.Products.Application.Caching;
+using ECommerce.Modules.Products.Application.Services;
+using ECommerce.SharedKernel.Api;
+using ECommerce.SharedKernel.Pagination;
+using ECommerce.SharedKernel.Security;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ECommerce.Modules.Products.Api.v2;
+
+[ApiController]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("2.0")]
+public sealed class ProductsController(ICachedProductService products) : ControllerBase
+{
+    [HttpGet]
+    public async Task<ActionResult<PagedResult<ProductDto>>> GetAll([FromQuery] ProductQuery query, CancellationToken ct)
+    {
+        return await products.GetAllAsync(query, ct);
+    }
+
+    [HttpGet("{id:guid}")]
+    [ETag]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status504GatewayTimeout, "application/problem+json")]
+    public async Task<ActionResult<ProductDetailsDto>> GetById(Guid id, CancellationToken ct)
+    {
+        return await products.GetByIdAsync(id, ct);
+    }
+
+    [HttpPost]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType<ProductDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    public async Task<ActionResult<ProductDto>> Create(ProductRequest request, CancellationToken ct)
+    {
+        var product = await products.CreateAsync(request, ct);
+        return Created($"/api/products/{product.Id}", product);
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    public async Task<ActionResult<ProductDto>> Update(Guid id, ProductRequest request, CancellationToken ct)
+        => await products.UpdateAsync(id, request, ct);
+
+    [HttpPut("{id:guid}/stock")]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status504GatewayTimeout, "application/problem+json")]
+    public async Task<ActionResult<ProductStockDto>> UpdateStock(Guid id, StockRequest request, CancellationToken ct)
+        => await products.UpdateStockAsync(id, request, ct);
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await products.DeleteAsync(id, ct);
+        return NoContent();
+    }
+}
