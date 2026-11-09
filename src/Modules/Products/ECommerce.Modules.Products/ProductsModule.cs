@@ -37,7 +37,7 @@ public static class ProductsModule
         services.AddSingleton<IImageStorage, LocalImageStorage>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, ProductService>();
-        services.Decorate<IProductService, CachedProductService>();
+        services.AddScoped<ICachedProductService, CachedProductService>();
         services.AddScoped<IProductImageService, ProductImageService>();
         services.AddScoped<IProductCatalog, ProductCatalog>();
         services.AddHostedService<ProductsDbInitializer>();
