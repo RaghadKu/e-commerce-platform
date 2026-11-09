@@ -73,7 +73,10 @@ public sealed record ProductDetailsDto(
     IReadOnlyList<ProductImageDto> Images,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
-    int? AvailableQuantity = null);
+    int? AvailableQuantity = null,
+    int? OnHandQuantity = null,
+    int? ReservedQuantity = null
+    );
 public sealed record StockLevelDto(Guid ProductId, int OnHand, int Reserved, int Available);
 
 public sealed record ProductStockDto(

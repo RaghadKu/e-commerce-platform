@@ -47,7 +47,6 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddHealthChecks();
-builder.Services.AddSharedKernel();
 builder.Services.AddSharedKernel(builder.Configuration);  
 
 builder.Services.AddUsersModule(builder.Configuration);

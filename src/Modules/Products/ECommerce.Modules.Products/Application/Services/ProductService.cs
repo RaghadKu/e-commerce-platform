@@ -40,8 +40,8 @@ internal class ProductService(ProductsDbContext db, IInventoryClient inventory) 
             .Include(p => p.Category).Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == id, ct)
             ?? throw NotFound()).ToDetailsDto();
-
-        return product with { AvailableQuantity = await inventory.GetAvailableAsync(id, ct) };
+        var stock = await inventory.GetAvailableAsync(id, ct);
+        return product with { AvailableQuantity = stock.Available,ReservedQuantity = stock.Reserved, OnHandQuantity = stock.OnHand };
     }
     public async Task<ProductDto> CreateAsync(ProductRequest request, CancellationToken ct)
     {
