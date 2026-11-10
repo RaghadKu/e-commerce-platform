@@ -26,6 +26,7 @@ public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
                     Title = "E-Commerce Platform API",
                     Version = description.ApiVersion.ToString()
                 });
+            options.OperationFilter<ConsistencyTokenHeaderFilter>();
         }
     }
 }

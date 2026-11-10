@@ -1,3 +1,4 @@
+
 using Asp.Versioning.ApiExplorer;
 using ECommerce.Host.Configuration;
 using ECommerce.Host.Middlewares;
@@ -7,8 +8,11 @@ using ECommerce.Modules.Notifications;
 using ECommerce.Modules.Orders;
 using ECommerce.Modules.Products;
 using ECommerce.Modules.Users;
+using ECommerce.Modules.Users.Domain;
 using ECommerce.SharedKernel;
 using ECommerce.SharedKernel.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,10 +32,28 @@ builder.Services.AddOrdersModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 builder.Services.AddInventoryContracts();
 
+// Authentication
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme =
+            JwtBearerDefaults.AuthenticationScheme;
+
+        options.DefaultChallengeScheme =
+            JwtBearerDefaults.AuthenticationScheme;
+
+        options.DefaultScheme =
+            JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer();
+
+// Authorization
+builder.Services.AddAuthorization();
+
 // Health Checks
 builder.Services.AddHealthChecks();
 
-// Swagger with API Versioning
+// Swagger
 builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
 builder.Services.AddSwaggerGen(options =>
@@ -43,7 +65,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Paste the access token only (without the word 'Bearer')."
+        Description = "Paste the access token only."
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -61,14 +83,6 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-
-builder.Services.AddHealthChecks();
-builder.Services.AddSharedKernel(builder.Configuration);  
-
-builder.Services.AddUsersModule(builder.Configuration);
-builder.Services.AddProductsModule(builder.Configuration);
-builder.Services.AddOrdersModule(builder.Configuration);
-builder.Services.AddNotificationsModule(builder.Configuration);
 
 // Seeder
 builder.Services.AddScoped<DevelopmentDataSeeder>();

@@ -1,14 +1,15 @@
-﻿using System.Text;
+﻿
+using System.Text;
 using ECommerce.Modules.Users.Application;
 using ECommerce.Modules.Users.Domain;
 using ECommerce.Modules.Users.Infrastructure;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace ECommerce.Modules.Users;
 
@@ -18,16 +19,19 @@ public static class UsersModule
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // JWT Options
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        // Login Security Options
         services.AddOptions<LoginSecurityOptions>()
             .Bind(configuration.GetSection(LoginSecurityOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        // Database
         services.AddDbContext<UsersDbContext>((sp, options) =>
         {
             var connectionString = sp.GetRequiredService<IConfiguration>()
@@ -41,6 +45,7 @@ public static class UsersModule
                     UsersDbContext.Schema));
         });
 
+        // Identity
         services.AddIdentityCore<ApplicationUser>(options =>
         {
             options.User.RequireUniqueEmail = true;
@@ -54,16 +59,22 @@ public static class UsersModule
         .AddRoles<ApplicationRole>()
         .AddEntityFrameworkStores<UsersDbContext>();
 
+        // Identity Lockout
         services.AddOptions<IdentityOptions>()
-            .Configure<IOptions<LoginSecurityOptions>>((identity, security) =>
-            {
-                identity.Lockout.AllowedForNewUsers = true;
-                identity.Lockout.MaxFailedAccessAttempts =
-                    security.Value.MaxFailedAccessAttempts;
-                identity.Lockout.DefaultLockoutTimeSpan =
-                    TimeSpan.FromMinutes(security.Value.LockoutMinutes);
-            });
+            .Configure<IOptions<LoginSecurityOptions>>(
+                (identity, security) =>
+                {
+                    identity.Lockout.AllowedForNewUsers = true;
 
+                    identity.Lockout.MaxFailedAccessAttempts =
+                        security.Value.MaxFailedAccessAttempts;
+
+                    identity.Lockout.DefaultLockoutTimeSpan =
+                        TimeSpan.FromMinutes(
+                            security.Value.LockoutMinutes);
+                });
+
+        // JWT Bearer Options
         services.AddOptions<JwtBearerOptions>(
                 JwtBearerDefaults.AuthenticationScheme)
             .Configure<IOptions<JwtOptions>>((bearer, jwtOptions) =>
@@ -85,7 +96,8 @@ public static class UsersModule
                         IssuerSigningKey = new SymmetricSecurityKey(
                             Encoding.UTF8.GetBytes(jwt.Key)),
 
-                        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+                        ValidAlgorithms =
+                            [SecurityAlgorithms.HmacSha256],
 
                         ValidateLifetime = true,
                         ClockSkew = TimeSpan.FromSeconds(30),
@@ -95,14 +107,17 @@ public static class UsersModule
                     };
             });
 
+        // Services
         services.AddSingleton<JwtTokenGenerator>();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
 
+        // Hosted Services
         services.AddHostedService<UsersDbInitializer>();
         services.AddHostedService<AdminsDbSeeder>();
 
+        // Seeders
         services.AddScoped<IUsersDbSeeder, CustomerSeeder>();
 
         return services;
