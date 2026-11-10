@@ -45,7 +45,6 @@ public static class SharedKernelExtensions
         services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = connectionString;
-            options.InstanceName = "EComm_"; // Global prefix to prevent key collisions
         });
 
         return services;
