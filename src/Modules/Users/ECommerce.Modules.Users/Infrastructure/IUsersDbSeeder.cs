@@ -2,5 +2,6 @@
 
 public interface IUsersDbSeeder
 {
-    Task SeedAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<Guid>> SeedAsync(
+        CancellationToken cancellationToken = default);
 }

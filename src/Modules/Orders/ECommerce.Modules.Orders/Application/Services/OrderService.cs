@@ -1,10 +1,11 @@
-﻿using ECommerce.Inventory.Contracts;
+using ECommerce.Inventory.Contracts;
 using ECommerce.Inventory.Contracts.PublicApi;
 using ECommerce.Modules.Orders.Domain;
 using ECommerce.Modules.Orders.Infrastructure;
 using ECommerce.Modules.Products.PublicApi;
 using ECommerce.SharedKernel.Exceptions;
 using ECommerce.SharedKernel.Pagination;
+using ECommerce.SharedKernel.Persistence;
 using ECommerce.SharedKernel.Security;
 using Grpc.Core;
 using Microsoft.AspNetCore.Http;
@@ -12,12 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Modules.Orders.Application.Services;
 
-internal class OrderService(
-    OrdersDbContext db,
-    IProductCatalog catalog,
-    IHttpContextAccessor httpContextAccessor,
-    IInventoryServiceClient inventoryServiceClient
-    ) : IOrderService
+internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IReadRouter router,
+    IProductCatalog catalog, IHttpContextAccessor httpContextAccessor,
+    InventoryService.InventoryServiceClient inventoryServiceClient) : IOrderService
 {
     private readonly Guid UserId = httpContextAccessor!.HttpContext!.User.GetUserId();
     private readonly bool isAdmin = httpContextAccessor!.HttpContext!.User.IsAdmin();
@@ -39,7 +37,7 @@ internal class OrderService(
         bool isNewOrder = false;
         var order = await db.Orders
             .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.UserId == UserId && o.Status == OrderStatus.Draft);
+            .FirstOrDefaultAsync(o => o.UserId == UserId && o.Status == OrderStatus.Draft, cancellationToken: ct);
 
         if (order is null)
         {
@@ -139,38 +137,64 @@ internal class OrderService(
     // Managing order
     #region
 
-    public async Task<PagedResult<OrderDto>> GetAllAsync(OrderQuery input, CancellationToken cancellationToken)
+
+public async Task<PagedResult<OrderDto>> GetAllAsync(
+    OrderQuery input,
+    CancellationToken cancellationToken)
+{
+    var page = Math.Max(1, input.Page);
+    var pageSize = Math.Clamp(input.PageSize, 1, 100);
+
+    // Route read operations to the replica when appropriate.
+    OrdersDbContext source =
+        await router.UseReplicaAsync(cancellationToken)
+            ? readDb
+            : db;
+
+    // Build the query.
+    var query = source.Orders.AsNoTracking();
+
+    // Filtering
+    if (input.UserId.HasValue)
     {
-        var page = Math.Max(1, input.Page);
-        var pageSize = Math.Clamp(input.PageSize, 1, 100);
-
-        var query = db.Orders.AsNoTracking();
-
-        if (input.UserId.HasValue)
-        {
-            query = query.Where(o => o.UserId == input.UserId.Value);
-        }
-
-        if (!string.IsNullOrEmpty(input.Status))
-        {
-            OrderStatus statusEnum = Enum.Parse<OrderStatus>(input.Status, true);
-            query = query.Where(o => o.Status == statusEnum);
-        }
-
-        var ordersPage = await query
-            .OrderByDescending(p => p.UpdatedAtUtc).ThenByDescending(p => p.CreatedAtUtc)
-            .Skip((page - 1) * pageSize).Take(pageSize)
-            .ToListAsync(cancellationToken);
-        
-        var total = await query.CountAsync(cancellationToken);
-
-        return new PagedResult<OrderDto>(ordersPage.Select(o => OrderDto.Create(o)).ToList(), page, pageSize, total);
+        query = query.Where(o => o.UserId == input.UserId.Value);
     }
+
+    if (!string.IsNullOrWhiteSpace(input.Status))
+    {
+        if (!Enum.TryParse<OrderStatus>(
+                input.Status, true, out var statusEnum))
+        {
+            throw new ArgumentException("Invalid order status.");
+        }
+
+        query = query.Where(o => o.Status == statusEnum);
+    }
+
+    // Total count before pagination.
+    var total = await query.CountAsync(cancellationToken);
+
+    // Pagination
+    var ordersPage = await query
+        .OrderByDescending(o => o.UpdatedAtUtc)
+        .ThenByDescending(o => o.CreatedAtUtc)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync(cancellationToken);
+
+    return new PagedResult<OrderDto>(
+        ordersPage.Select(OrderDto.Create).ToList(),
+        page,
+        pageSize,
+        total);
+}
+
 
     public async Task<OrderDto> GetByIdAsync(Guid Id, CancellationToken ct)
     {
+        OrdersDbContext source = await router.UseReplicaAsync(ct) ? readDb : db;
 
-        var order = await db.Orders
+        var order = await source.Orders.AsNoTracking()
             .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == Id && (o.UserId == UserId || isAdmin), ct);
 

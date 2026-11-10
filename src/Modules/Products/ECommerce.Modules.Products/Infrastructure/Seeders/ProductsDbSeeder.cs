@@ -12,29 +12,14 @@ internal sealed class ProductsDbSeeder(
 
     private static readonly string[] ProductVariants =
     [
-        "Essential",
-        "Classic",
-        "Plus",
-        "Pro",
-        "Premium",
-        "Ultra",
-        "Compact",
-        "Max",
-        "Lite",
-        "Advanced",
-        "Smart",
-        "Wireless",
-        "Portable",
-        "Performance",
-        "Studio",
-        "Everyday",
-        "Professional",
-        "Elite",
-        "Signature",
-        "Modern"
+        "Essential", "Classic", "Plus", "Pro", "Premium",
+        "Ultra", "Compact", "Max", "Lite", "Advanced",
+        "Smart", "Wireless", "Portable", "Performance",
+        "Studio", "Everyday", "Professional", "Elite",
+        "Signature", "Modern"
     ];
 
-    public async Task<IReadOnlyList<Guid>> SeedAsync(
+    public async Task<IReadOnlyList<ProductSeedData>> SeedAsync(
         IReadOnlyList<Guid> categoryIds,
         CancellationToken cancellationToken)
     {
@@ -68,25 +53,20 @@ internal sealed class ProductsDbSeeder(
                     }))
             .ToList();
 
-        var productIds = new List<Guid>(definitions.Count);
-
         foreach (var batch in definitions.Chunk(BatchSize))
         {
             var skus = batch.Select(p => p.Sku).ToArray();
 
-            var existingProducts = await db.Products
+            var existingSkus = await db.Products
                 .AsNoTracking()
                 .Where(p => skus.Contains(p.Sku))
-                .Select(p => new { p.Id, p.Sku })
+                .Select(p => p.Sku)
                 .ToListAsync(cancellationToken);
 
-            var existingBySku = existingProducts
-                .ToDictionary(p => p.Sku, p => p.Id);
-
-            productIds.AddRange(existingProducts.Select(p => p.Id));
+            var existingSkuSet = existingSkus.ToHashSet();
 
             var newProducts = batch
-                .Where(p => !existingBySku.ContainsKey(p.Sku))
+                .Where(p => !existingSkuSet.Contains(p.Sku))
                 .Select(p => new Product
                 {
                     Id = Guid.NewGuid(),
@@ -101,18 +81,26 @@ internal sealed class ProductsDbSeeder(
                 })
                 .ToList();
 
-            if (newProducts.Count == 0)
-                continue;
-
-            db.Products.AddRange(newProducts);
-
-            await db.SaveChangesAsync(cancellationToken);
-
-            productIds.AddRange(newProducts.Select(p => p.Id));
-
-            db.ChangeTracker.Clear();
+            if (newProducts.Count > 0)
+            {
+                db.Products.AddRange(newProducts);
+                await db.SaveChangesAsync(cancellationToken);
+                db.ChangeTracker.Clear();
+            }
         }
 
-        return productIds;
+        var allSkus = definitions.Select(p => p.Sku).ToArray();
+
+        var products = await db.Products
+            .AsNoTracking()
+            .Where(p => allSkus.Contains(p.Sku))
+            .Select(p => new ProductSeedData(p.Id, p.Price))
+            .ToListAsync(cancellationToken);
+
+        if (products.Count != definitions.Count)
+            throw new InvalidOperationException(
+                "Some products could not be retrieved after seeding.");
+
+        return products;
     }
 }

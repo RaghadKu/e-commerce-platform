@@ -3,9 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Modules.Orders.Infrastructure;
 
-internal sealed class OrdersDbContext(DbContextOptions<OrdersDbContext> options) : DbContext(options)
+internal class OrdersDbContext : DbContext
 {
     public const string Schema = "orders";
+
+    public OrdersDbContext(DbContextOptions<OrdersDbContext> options) : base(options) { }
+    protected OrdersDbContext(DbContextOptions options) : base(options) { }
 
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();

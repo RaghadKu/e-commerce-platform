@@ -8,6 +8,7 @@ using ECommerce.Modules.Orders;
 using ECommerce.Modules.Products;
 using ECommerce.Modules.Users;
 using ECommerce.SharedKernel;
+using ECommerce.SharedKernel.Persistence;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 // Shared Kernel
 builder.Services.AddSharedKernel(builder.Configuration);
+builder.Services.AddReadConsistency();
 
 // Modules
 builder.Services.AddUsersModule(builder.Configuration);
@@ -113,6 +115,7 @@ app.UseAuthorization();
 
 // Custom Middleware
 app.UseMiddleware<RequestTimingMiddleware>();
+app.UseMiddleware<ConsistencyMiddleware>();
 
 // Endpoints
 app.MapControllers();
