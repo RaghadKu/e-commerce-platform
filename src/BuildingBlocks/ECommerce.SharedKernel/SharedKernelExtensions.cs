@@ -1,4 +1,5 @@
-﻿using ECommerce.SharedKernel.Api;
+﻿using Asp.Versioning;
+using ECommerce.SharedKernel.Api;
 using ECommerce.SharedKernel.Caching;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,18 @@ public static class SharedKernelExtensions
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
+        services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;
+            options.ReportApiVersions = true;
+            options.ApiVersionReader = new UrlSegmentApiVersionReader();
+        })
+        .AddApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'VVV"; // Formats as v1, v2, etc.
+            options.SubstituteApiVersionInUrl = true; // Automatically replaces {version} in route templates
+        });
 
         services.AddScoped<ICacheStore, RedisCacheStore>();
 
@@ -32,7 +45,6 @@ public static class SharedKernelExtensions
         services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = connectionString;
-            options.InstanceName = "EComm_"; // Global prefix to prevent key collisions
         });
 
         return services;

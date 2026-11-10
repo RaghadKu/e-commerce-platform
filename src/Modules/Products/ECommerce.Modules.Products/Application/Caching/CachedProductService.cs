@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace ECommerce.Modules.Products.Application.Caching;
 
-internal class CachedProductService(IProductService productService, ICacheStore cacheStore) : IProductService
+public class CachedProductService(IProductService productService, ICacheStore cacheStore) : ICachedProductService
 {
     public async Task<PagedResult<ProductDto>> GetAllAsync(ProductQuery query, CancellationToken ct)
     {

@@ -5,6 +5,7 @@ using ECommerce.Modules.Products.Application.Services;
 using ECommerce.Modules.Products.Infrastructure;
 using ECommerce.Modules.Products.Infrastructure.Seeders;
 using ECommerce.Modules.Products.PublicApi;
+using ECommerce.SharedKernel.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,16 @@ public static class ProductsModule
 
             options.UseSqlServer(connectionString, sql 
                 => sql.MigrationsHistoryTable("__EFMigrationsHistory", ProductsDbContext.Schema));
+
+            options.AddHeartbeat(sp);
+        });
+
+        services.AddDbContext<ProductsReadDbContext>((sp, options) =>
+        {
+            var connectionString = ReadReplicaSettings.GetReadConnectionString(
+                sp.GetRequiredService<IConfiguration>());
+
+            options.UseSqlServer(connectionString);
         });
 
         services.AddGrpcClient<InventoryService.InventoryServiceClient>(o =>
@@ -37,7 +48,7 @@ public static class ProductsModule
         services.AddSingleton<IImageStorage, LocalImageStorage>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, ProductService>();
-        services.Decorate<IProductService, CachedProductService>();
+        services.AddScoped<ICachedProductService, CachedProductService>();
         services.AddScoped<IProductImageService, ProductImageService>();
         services.AddScoped<IProductCatalog, ProductCatalog>();
         services.AddHostedService<ProductsDbInitializer>();

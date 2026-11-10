@@ -3,18 +3,26 @@ using ECommerce.Modules.Products.Domain;
 using ECommerce.Modules.Products.Infrastructure;
 using ECommerce.SharedKernel.Exceptions;
 using ECommerce.SharedKernel.Pagination;
+using ECommerce.SharedKernel.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Modules.Products.Application.Services;
 
-internal class ProductService(ProductsDbContext db, IInventoryClient inventory) : IProductService
+internal class ProductService(
+    ProductsDbContext db,
+    ProductsReadDbContext readDb,
+    IReadRouter router,
+    IInventoryClient inventory) : IProductService
 {
     public async Task<PagedResult<ProductDto>> GetAllAsync(ProductQuery query, CancellationToken ct)
     {
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var products = db.Products.AsNoTracking();
+        ProductsDbContext source = await router.UseReplicaAsync(ct) ? readDb : db;
+
+        var products = source.Products.AsNoTracking();
+
         if (query.CategoryId is { } categoryId)
             products = products.Where(p => p.CategoryId == categoryId);
 

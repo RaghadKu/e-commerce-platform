@@ -3,9 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Modules.Products.Infrastructure;
 
-internal sealed class ProductsDbContext(DbContextOptions<ProductsDbContext> options) : DbContext(options)
+internal class ProductsDbContext : DbContext
 {
     public const string Schema = "catalog";
+
+    public ProductsDbContext(DbContextOptions<ProductsDbContext> options) : base(options) { }
+    protected ProductsDbContext(DbContextOptions options) : base(options) { }
 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Category> Categories => Set<Category>();

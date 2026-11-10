@@ -2,13 +2,36 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: ecommerce-sqlserver
+    hostname: sqlserver
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: ${SA_PASSWORD}
+      MSSQL_PID: Developer
+      MSSQL_ENABLE_HADR: "1"
     ports:
       - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  sqlserver-replica:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ecommerce-sqlserver-replica
+    hostname: sqlserver-replica
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD}
+      MSSQL_PID: Developer
+      MSSQL_ENABLE_HADR: "1"
+    ports:
+      - "1434:1433"
+    volumes:
+      - sqlserver-replica-data:/var/opt/mssql
     healthcheck:
       test: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" || exit 1
       interval: 10s
@@ -37,6 +60,8 @@ services:
       Inventory__GrpcUrl: http://inventory:8080
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__MainDb: "Server=sqlserver;Database=MainDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+      ConnectionStrings__MainDbReplica: "Server=sqlserver-replica;Database=MainDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+      ReadReplica__Enabled: "true"
       ConnectionStrings__Redis: "redis:6379"
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: ecommerce-api
@@ -49,9 +74,10 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+      sqlserver-replica:
+        condition: service_healthy  
       redis:
         condition: service_healthy
-        
 
   inventory:
     build:
@@ -69,3 +95,4 @@ services:
 
 volumes:
   sqlserver-data:
+  sqlserver-replica-data:

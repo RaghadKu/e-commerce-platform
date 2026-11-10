@@ -1,5 +1,7 @@
 ﻿using ECommerce.Modules.Orders.Application.Services;
 using ECommerce.Modules.Orders.Infrastructure;
+using ECommerce.SharedKernel.Persistence;
+using ECommerce.Modules.Orders.Infrastructure.Seeders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,9 +23,18 @@ public static class OrdersModule
 
             options.UseSqlServer(connectionString, sql
                 => sql.MigrationsHistoryTable("__EFMigrationsHistory", OrdersDbContext.Schema));
+
+            options.AddHeartbeat(sp);
+        });
+
+        services.AddDbContext<OrdersReadDbContext>((sp, options) =>
+        {
+            options.UseSqlServer(ReadReplicaSettings.GetReadConnectionString(
+                sp.GetRequiredService<IConfiguration>()));
         });
 
         services.AddHostedService<OrdersDbInitializer>();
+        services.AddScoped<IOrdersDbSeeder, OrdersDbSeeder>();
 
         return services;
     }

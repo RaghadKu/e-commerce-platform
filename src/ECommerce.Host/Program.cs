@@ -1,25 +1,41 @@
-
-using ECommerce.Host.Seeders;
+using Asp.Versioning.ApiExplorer;
+using ECommerce.Host.Configuration;
 using ECommerce.Host.Middlewares;
+using ECommerce.Host.Seeders;
+using ECommerce.Inventory.Contracts;
 using ECommerce.Modules.Notifications;
 using ECommerce.Modules.Orders;
 using ECommerce.Modules.Products;
 using ECommerce.Modules.Users;
 using ECommerce.SharedKernel;
+using ECommerce.SharedKernel.Persistence;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+// Shared Kernel
+builder.Services.AddSharedKernel(builder.Configuration);
+builder.Services.AddReadConsistency();
+
+// Modules
+builder.Services.AddUsersModule(builder.Configuration);
+builder.Services.AddProductsModule(builder.Configuration);
+builder.Services.AddOrdersModule(builder.Configuration);
+builder.Services.AddNotificationsModule(builder.Configuration);
+builder.Services.AddInventoryContracts();
+
+// Health Checks
+builder.Services.AddHealthChecks();
+
+// Swagger with API Versioning
+builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
+
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "E-Commerce Platform API",
-        Version = "v1"
-    });
-
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -54,10 +70,12 @@ builder.Services.AddProductsModule(builder.Configuration);
 builder.Services.AddOrdersModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
 
+// Seeder
 builder.Services.AddScoped<DevelopmentDataSeeder>();
 
 var app = builder.Build();
 
+// Database Seeding
 if (builder.Configuration.GetValue<bool>("seed-catalog"))
 {
     if (!app.Environment.IsDevelopment())
@@ -76,20 +94,38 @@ if (builder.Configuration.GetValue<bool>("seed-catalog"))
     return;
 }
 
+// Exception Handling
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+
+    app.UseSwaggerUI(options =>
+    {
+        var provider = app.Services
+            .GetRequiredService<IApiVersionDescriptionProvider>();
+
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant());
+        }
+    });
 }
 
-app.UseAuthentication();     
+// Authentication & Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
+// Custom Middleware
 app.UseMiddleware<RequestTimingMiddleware>();
+app.UseMiddleware<ConsistencyMiddleware>();
 
+// Endpoints
 app.MapControllers();
 app.MapHealthChecks("/health");
 
