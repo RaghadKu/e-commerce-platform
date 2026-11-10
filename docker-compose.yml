@@ -60,6 +60,8 @@ services:
       Inventory__GrpcUrl: http://inventory:8080
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__MainDb: "Server=sqlserver;Database=MainDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+      ConnectionStrings__MainDbReplica: "Server=sqlserver-replica;Database=MainDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+      ReadReplica__Enabled: "true"
       ConnectionStrings__Redis: "redis:6379"
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: ecommerce-api
@@ -72,6 +74,8 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+      sqlserver-replica:
+        condition: service_healthy  
       redis:
         condition: service_healthy
 

@@ -3,6 +3,7 @@ using ECommerce.Modules.Orders.Domain;
 using ECommerce.Modules.Orders.Infrastructure;
 using ECommerce.Modules.Products.PublicApi;
 using ECommerce.SharedKernel.Exceptions;
+using ECommerce.SharedKernel.Persistence;
 using ECommerce.SharedKernel.Security;
 using Grpc.Core;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Modules.Orders.Application.Services;
 
-internal class OrderService(OrdersDbContext db, IProductCatalog catalog, IHttpContextAccessor httpContextAccessor,
+internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IReadRouter router,
+    IProductCatalog catalog, IHttpContextAccessor httpContextAccessor,
     InventoryService.InventoryServiceClient inventoryServiceClient) : IOrderService
 {
     private const int MaxReservationLines = 100;
@@ -139,7 +141,8 @@ internal class OrderService(OrdersDbContext db, IProductCatalog catalog, IHttpCo
     // Should update to support pagination
     public async Task<List<OrderDto>> GetAllAsync(CancellationToken cancellationToken)
     {
-        var ordersList = await db.Orders.Include(o => o.Items).ToListAsync(cancellationToken);
+        OrdersDbContext source = await router.UseReplicaAsync(cancellationToken) ? readDb : db;
+        var ordersList = await source.Orders.AsNoTracking().Include(o => o.Items).ToListAsync(cancellationToken);
 
         var response = ordersList.Select(o => OrderDto.Create(o)).ToList();
 
@@ -148,7 +151,9 @@ internal class OrderService(OrdersDbContext db, IProductCatalog catalog, IHttpCo
 
     public async Task<OrderDto> GetByIdAsync(Guid Id, CancellationToken ct)
     {
-        var order = await db.Orders
+        OrdersDbContext source = await router.UseReplicaAsync(ct) ? readDb : db;
+
+        var order = await source.Orders.AsNoTracking()
             .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == Id && o.UserId == UserId, ct);
 
