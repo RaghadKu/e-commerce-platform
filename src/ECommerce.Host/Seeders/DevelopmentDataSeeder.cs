@@ -1,30 +1,50 @@
 ﻿using ECommerce.Inventory.Contracts;
+using ECommerce.Modules.Orders.Infrastructure.Seeders;
 using ECommerce.Modules.Products.Infrastructure.Seeders;
 using ECommerce.Modules.Users.Infrastructure;
 
 namespace ECommerce.Host.Seeders;
 
 internal sealed class DevelopmentDataSeeder(
-    IUsersDbSeeder usersSeeder,
+    IUsersDbSeeder customerSeeder,
     IProductsDbSeeder productsSeeder,
     ICategoriesDbSeeder categoriesSeeder,
+    IOrdersDbSeeder ordersSeeder,
     InventoryService.InventoryServiceClient inventoryClient)
 {
     public async Task SeedAsync(CancellationToken cancellationToken)
     {
-        await usersSeeder.SeedAsync(cancellationToken);
+        var customerIds = await customerSeeder.SeedAsync(
+            cancellationToken);
 
-        var categoryIds = await categoriesSeeder.SeedAsync(cancellationToken);
+        var categoryIds = await categoriesSeeder.SeedAsync(
+            cancellationToken);
 
-        var productIds = await productsSeeder.SeedAsync(categoryIds, cancellationToken);
+        var productData = await productsSeeder.SeedAsync(
+            categoryIds,
+            cancellationToken);
 
         var request = new SeedStockRequest();
 
         request.ProductIds.AddRange(
-            productIds.Select(id => id.ToString()));
+            productData.Select(p => p.ProductId.ToString()));
 
-        var response = await inventoryClient.SeedStockAsync(
+        await inventoryClient.SeedStockAsync(
             request,
             cancellationToken: cancellationToken);
+
+        var orderProducts = productData
+            .Select(p => new ProductSeedData(
+                p.ProductId,
+                p.Price))
+            .ToList();
+
+        var createdOrders = await ordersSeeder.SeedAsync(
+            customerIds,
+            orderProducts,
+            cancellationToken);
+
+        Console.WriteLine(
+            $"Development seeding completed. Created {createdOrders} orders.");
     }
 }
