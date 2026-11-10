@@ -54,3 +54,10 @@ public class OrderItemDto
 public record AddOrderItemRequest(Guid ProductId, int Qty);
 public record UpdateOrderItemRequest(Guid OrderItemId, int Qty);
 
+public sealed class OrderQuery
+{
+    public Guid? UserId { get; init; }
+    public string? Status { get; set; } = string.Empty;
+    public int Page { get; init; } = 1;
+    public int PageSize { get; init; } = 20;
+}

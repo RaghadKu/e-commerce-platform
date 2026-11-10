@@ -2,6 +2,7 @@ using Asp.Versioning.ApiExplorer;
 using ECommerce.Host.Configuration;
 using ECommerce.Host.Middlewares;
 using ECommerce.Host.Seeders;
+using ECommerce.Inventory.Contracts;
 using ECommerce.Modules.Notifications;
 using ECommerce.Modules.Orders;
 using ECommerce.Modules.Products;
@@ -23,6 +24,7 @@ builder.Services.AddUsersModule(builder.Configuration);
 builder.Services.AddProductsModule(builder.Configuration);
 builder.Services.AddOrdersModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
+builder.Services.AddInventoryContracts();
 
 // Health Checks
 builder.Services.AddHealthChecks();
