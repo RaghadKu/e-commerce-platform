@@ -1,14 +1,12 @@
-﻿
-using ECommerce.Modules.Users.Domain;
+﻿using ECommerce.Modules.Users.Domain;
 using ECommerce.SharedKernel.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace ECommerce.Modules.Users.Infrastructure;
 
-internal sealed class UsersCustomerSeeder(
+internal sealed class CustomerSeeder(
     UsersDbContext db,
     RoleManager<ApplicationRole> roleManager,
     IPasswordHasher<ApplicationUser> passwordHasher,
@@ -18,7 +16,8 @@ internal sealed class UsersCustomerSeeder(
     private const int CustomerCount = 10_000;
     private const int BatchSize = 500;
 
-    public async Task SeedAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Guid>> SeedAsync(
+        CancellationToken cancellationToken = default)
     {
         var password = configuration["Seed:CustomerPassword"];
 
@@ -30,6 +29,7 @@ internal sealed class UsersCustomerSeeder(
             ?? throw new InvalidOperationException(
                 "Customer role does not exist.");
 
+        var customerIds = new List<Guid>(CustomerCount);
         var totalCreated = 0;
 
         for (var start = 1; start <= CustomerCount; start += BatchSize)
@@ -53,6 +53,8 @@ internal sealed class UsersCustomerSeeder(
             var existingEmails = existingUsers
                 .Select(u => u.NormalizedEmail!)
                 .ToHashSet();
+
+            customerIds.AddRange(existingUsers.Select(u => u.Id));
 
             var existingIds = existingUsers
                 .Select(u => u.Id)
@@ -111,6 +113,8 @@ internal sealed class UsersCustomerSeeder(
                     UserId = customer.Id,
                     RoleId = customerRole.Id
                 });
+
+                customerIds.Add(customer.Id);
             }
 
             db.Users.AddRange(newUsers);
@@ -131,5 +135,7 @@ internal sealed class UsersCustomerSeeder(
 
         Console.WriteLine(
             $"Customer seeding completed. New customers: {totalCreated}");
+
+        return customerIds;
     }
 }
