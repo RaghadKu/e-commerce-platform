@@ -1,8 +1,10 @@
-﻿using ECommerce.Inventory.Contracts;
+using ECommerce.Inventory.Contracts;
+using ECommerce.Inventory.Contracts.PublicApi;
 using ECommerce.Modules.Orders.Domain;
 using ECommerce.Modules.Orders.Infrastructure;
 using ECommerce.Modules.Products.PublicApi;
 using ECommerce.SharedKernel.Exceptions;
+using ECommerce.SharedKernel.Pagination;
 using ECommerce.SharedKernel.Persistence;
 using ECommerce.SharedKernel.Security;
 using Grpc.Core;
@@ -15,12 +17,9 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
     IProductCatalog catalog, IHttpContextAccessor httpContextAccessor,
     InventoryService.InventoryServiceClient inventoryServiceClient) : IOrderService
 {
-    private const int MaxReservationLines = 100;
-    private const int MaxLineQuantity = 100_000;
-    private static readonly TimeSpan InventoryTimeout = TimeSpan.FromSeconds(3);
-
     private readonly Guid UserId = httpContextAccessor!.HttpContext!.User.GetUserId();
-
+    private readonly bool isAdmin = httpContextAccessor!.HttpContext!.User.IsAdmin();
+   
     // Managing order items
     #region
 
@@ -138,16 +137,58 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
     // Managing order
     #region
 
-    // Should update to support pagination
-    public async Task<List<OrderDto>> GetAllAsync(CancellationToken cancellationToken)
+
+public async Task<PagedResult<OrderDto>> GetAllAsync(
+    OrderQuery input,
+    CancellationToken cancellationToken)
+{
+    var page = Math.Max(1, input.Page);
+    var pageSize = Math.Clamp(input.PageSize, 1, 100);
+
+    // Route read operations to the replica when appropriate.
+    OrdersDbContext source =
+        await router.UseReplicaAsync(cancellationToken)
+            ? readDb
+            : db;
+
+    // Build the query.
+    var query = source.Orders.AsNoTracking();
+
+    // Filtering
+    if (input.UserId.HasValue)
     {
-        OrdersDbContext source = await router.UseReplicaAsync(cancellationToken) ? readDb : db;
-        var ordersList = await source.Orders.AsNoTracking().Include(o => o.Items).ToListAsync(cancellationToken);
-
-        var response = ordersList.Select(o => OrderDto.Create(o)).ToList();
-
-        return response;
+        query = query.Where(o => o.UserId == input.UserId.Value);
     }
+
+    if (!string.IsNullOrWhiteSpace(input.Status))
+    {
+        if (!Enum.TryParse<OrderStatus>(
+                input.Status, true, out var statusEnum))
+        {
+            throw new ArgumentException("Invalid order status.");
+        }
+
+        query = query.Where(o => o.Status == statusEnum);
+    }
+
+    // Total count before pagination.
+    var total = await query.CountAsync(cancellationToken);
+
+    // Pagination
+    var ordersPage = await query
+        .OrderByDescending(o => o.UpdatedAtUtc)
+        .ThenByDescending(o => o.CreatedAtUtc)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync(cancellationToken);
+
+    return new PagedResult<OrderDto>(
+        ordersPage.Select(OrderDto.Create).ToList(),
+        page,
+        pageSize,
+        total);
+}
+
 
     public async Task<OrderDto> GetByIdAsync(Guid Id, CancellationToken ct)
     {
@@ -155,7 +196,7 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
 
         var order = await source.Orders.AsNoTracking()
             .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.Id == Id && o.UserId == UserId, ct);
+            .FirstOrDefaultAsync(o => o.Id == Id && (o.UserId == UserId || isAdmin), ct);
 
         if (order is null)
         {
@@ -165,7 +206,7 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
         return OrderDto.Create(order);
     }
 
-    // Handling inventory updates
+    // Handling stock reservation
     public async Task<OrderDto> CheckoutAsync(CancellationToken cancellationToken)
     {
         var order = await db.Orders
@@ -182,43 +223,7 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
             .Select(g => (ProductId: g.Key, Quantity: g.Sum(i => i.Qty)))
             .ToList();
 
-        if (lines.Count is 0 or > MaxReservationLines || lines.Any(l => l.Quantity is < 1 or > MaxLineQuantity))
-        {
-            throw new ValidationFailedException(new Dictionary<string, string[]>
-            {
-                ["Items"] = [$"The order must contain 1 to {MaxReservationLines} products, each with a quantity from 1 to {MaxLineQuantity}."]
-            });
-        }
-
-        var reserveResult = await CallInventoryAsync(
-            ct => inventoryServiceClient.ReserveStockAsync(
-                new ReserveStockRequest
-                {
-                    OrderId = order.Id.ToString(),
-                    Lines =
-                    {
-                        lines.Select(l => new StockQuantity
-                        {
-                            ProductId = l.ProductId.ToString(),
-                            Quantity = l.Quantity
-                        })
-                    }
-                },
-                deadline: DateTime.UtcNow.Add(InventoryTimeout),
-                cancellationToken: ct).ResponseAsync,
-            cancellationToken);
-
-        switch (reserveResult.Status)
-        {
-            case ReserveStatus.Reserved:
-                break;
-            case ReserveStatus.InsufficientStock:
-                throw new ConflictException(DescribeShortages(reserveResult));
-            case ReserveStatus.AlreadyReleased:
-                throw new ConflictException("Stock for this order was already released and cannot be reserved again.");
-            default:
-                throw new ServiceUnavailableException("The inventory service returned an unexpected reservation status.");
-        }
+        await inventoryServiceClient.ReserveStockAsync(order.Id, lines, cancellationToken);
 
         order.Status = OrderStatus.Pending;
         order.UpdatedAtUtc = DateTime.UtcNow;
@@ -228,7 +233,7 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
         return OrderDto.Create(order);
     }
 
-    //Handling Payment
+    // Handling payment and stock adjustment
     public async Task<OrderDto> ConfirmAsync(CancellationToken cancellationToken)
     {
         var order = await db.Orders
@@ -243,6 +248,9 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
         // pay for order using payment service
         // implement here
 
+        // reduce stock for each item in the order
+        // release reserved stock 
+
         order.Status = OrderStatus.Confirmed;
         db.Update(order);
         await db.SaveChangesAsync();
@@ -255,29 +263,14 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
     {
         var order = await db.Orders
             .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.UserId == UserId && o.Status == OrderStatus.Pending, cancellationToken);
+            .FirstOrDefaultAsync(o => (o.UserId == UserId || isAdmin) && o.Status == OrderStatus.Pending, cancellationToken);
 
         if (order is null)
         {
             throw new NotFoundException($"No pending Order to cancel");
         }
 
-        var releaseResult = await CallInventoryAsync(
-            ct => inventoryServiceClient.ReleaseStockAsync(
-                new ReleaseStockRequest { OrderId = order.Id.ToString() },
-                deadline: DateTime.UtcNow.Add(InventoryTimeout),
-                cancellationToken: ct).ResponseAsync,
-            cancellationToken);
-
-        switch (releaseResult.Status)
-        {
-            case ReleaseStatus.Released:
-            case ReleaseStatus.AlreadyReleased:
-            case ReleaseStatus.NotFound:
-                break;
-            default:
-                throw new ServiceUnavailableException("The inventory service could not release the reserved stock.");
-        }
+        await inventoryServiceClient.ReleaseStockAsync(order.Id, cancellationToken);
 
         order.Status = OrderStatus.Cancelled;
         order.UpdatedAtUtc = DateTime.UtcNow;
@@ -285,33 +278,6 @@ internal class OrderService(OrdersDbContext db, OrdersReadDbContext readDb, IRea
         await db.SaveChangesAsync(cancellationToken);
 
         return OrderDto.Create(order);
-    }
-
-    private async Task<T> CallInventoryAsync<T>(Func<CancellationToken, Task<T>> call, CancellationToken ct)
-    {
-        try
-        {
-            return await call(ct);
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.DeadlineExceeded)
-        {
-            throw new GatewayTimeoutException("The inventory service took too long to respond. Please try again.");
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.Unavailable)
-        {
-            throw new ServiceUnavailableException("The inventory service is currently unavailable. Please try again later.");
-        }
-    }
-
-    private static string DescribeShortages(ReserveStockResponse response)
-    {
-        if (response.Shortages.Count == 0)
-            return "One or more items do not have enough stock.";
-
-        var details = string.Join("; ", response.Shortages.Select(s =>
-            $"product {s.ProductId} requested {s.Requested} but only {s.Available} available"));
-
-        return $"Insufficient stock: {details}.";
     }
 
     #endregion

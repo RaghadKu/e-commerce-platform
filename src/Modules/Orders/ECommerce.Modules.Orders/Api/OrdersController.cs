@@ -1,5 +1,6 @@
 ﻿using ECommerce.Modules.Orders.Application;
 using ECommerce.Modules.Orders.Application.Services;
+using ECommerce.SharedKernel.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,9 +37,10 @@ public class OrdersController(IOrderService orderService) : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken ct)
+    [Authorize(Roles = AppRoles.Admin)]
+    public async Task<IActionResult> GetAll([FromQuery] OrderQuery input, CancellationToken ct)
     {
-        return Ok(await orderService.GetAllAsync(ct));
+        return Ok(await orderService.GetAllAsync(input, ct));
     }
 
     [HttpGet("{id:guid}")]
