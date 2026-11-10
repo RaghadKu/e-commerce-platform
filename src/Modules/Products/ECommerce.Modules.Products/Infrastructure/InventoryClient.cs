@@ -9,7 +9,7 @@ internal sealed class InventoryClient(InventoryService.InventoryServiceClient cl
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(3);
 
-    public Task<int> GetAvailableAsync(Guid productId, CancellationToken ct)
+    public Task<StockLevelDto> GetAvailableAsync(Guid productId, CancellationToken ct)
         => CallAsync(async () =>
         {
             var response = await client.CheckAvailabilityAsync(
@@ -17,7 +17,8 @@ internal sealed class InventoryClient(InventoryService.InventoryServiceClient cl
                 deadline: DateTime.UtcNow.Add(Timeout),
                 cancellationToken: ct);
 
-            return response.Levels.Single().Available;
+            var level = response.Levels.Single();
+            return new StockLevelDto(productId, level.OnHand, level.Reserved, level.Available);
         });
 
     public async Task<StockLevelDto> SetStockAsync(Guid productId, int quantityOnHand, CancellationToken ct)

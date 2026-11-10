@@ -62,6 +62,14 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddHealthChecks();
+builder.Services.AddSharedKernel(builder.Configuration);  
+
+builder.Services.AddUsersModule(builder.Configuration);
+builder.Services.AddProductsModule(builder.Configuration);
+builder.Services.AddOrdersModule(builder.Configuration);
+builder.Services.AddNotificationsModule(builder.Configuration);
+
 // Seeder
 builder.Services.AddScoped<DevelopmentDataSeeder>();
 
