@@ -36,7 +36,7 @@ internal class OrderService(OrdersDbContext db, IProductCatalog catalog, IHttpCo
         bool isNewOrder = false;
         var order = await db.Orders
             .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.UserId == UserId && o.Status == OrderStatus.Draft);
+            .FirstOrDefaultAsync(o => o.UserId == UserId && o.Status == OrderStatus.Draft, cancellationToken: ct);
 
         if (order is null)
         {

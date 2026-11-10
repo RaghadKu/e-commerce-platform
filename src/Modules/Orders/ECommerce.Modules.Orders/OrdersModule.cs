@@ -1,5 +1,6 @@
 ﻿using ECommerce.Modules.Orders.Application.Services;
 using ECommerce.Modules.Orders.Infrastructure;
+using ECommerce.Modules.Orders.Infrastructure.Seeders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,7 @@ public static class OrdersModule
         });
 
         services.AddHostedService<OrdersDbInitializer>();
+        services.AddScoped<IOrdersDbSeeder, OrdersDbSeeder>();
 
         return services;
     }

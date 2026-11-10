@@ -84,7 +84,7 @@ public static class UsersModule
         services.AddScoped<IUserService, UserService>();
         services.AddHostedService<UsersDbInitializer>();
         services.AddHostedService<AdminsDbSeeder>();
-        services.AddScoped<IUsersDbSeeder, UsersCustomerSeeder>();
+        services.AddScoped<IUsersDbSeeder, CustomerSeeder>();
 
         return services;
     }
