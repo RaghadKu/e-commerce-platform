@@ -10,6 +10,7 @@ using ECommerce.Modules.Products;
 using ECommerce.Modules.Users;
 using ECommerce.Modules.Users.Domain;
 using ECommerce.SharedKernel;
+using ECommerce.SharedKernel.Messaging;
 using ECommerce.SharedKernel.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
@@ -24,6 +25,7 @@ builder.Services.AddEndpointsApiExplorer();
 // Shared Kernel
 builder.Services.AddSharedKernel(builder.Configuration);
 builder.Services.AddReadConsistency();
+builder.Services.AddMessaging(builder.Configuration);
 
 // Modules
 builder.Services.AddUsersModule(builder.Configuration);
