@@ -1,9 +1,11 @@
-using ECommerce.Inventory.Contracts;
 using ECommerce.Inventory.Contracts.PublicApi;
 using ECommerce.Modules.Orders.Domain;
 using ECommerce.Modules.Orders.Infrastructure;
+using ECommerce.Modules.Orders.Infrastructure.Outbox;
 using ECommerce.Modules.Products.PublicApi;
 using ECommerce.SharedKernel.Exceptions;
+using ECommerce.SharedKernel.Messaging.Events;
+using ECommerce.SharedKernel.Messaging;
 using ECommerce.SharedKernel.Pagination;
 using ECommerce.SharedKernel.Persistence;
 using ECommerce.SharedKernel.Security;
@@ -222,6 +224,34 @@ internal class OrderService(
         order.Status = OrderStatus.Pending;
         order.UpdatedAtUtc = DateTime.UtcNow;
         db.Update(order);
+
+        // Product names for the email. Prices already come from the order items.
+        var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
+        var names = (await catalog.GetProductsAsync(productIds, cancellationToken))
+            .ToDictionary(p => p.Id, p => p.Name);
+
+        // The customer's email and name come from the JWT, so Orders does not need the Users module.
+        var user = httpContextAccessor.HttpContext!.User;
+
+        var orderCreated = new OrderCreatedEvent(
+            OrderId: order.Id,
+            UserId: UserId,
+            CustomerEmail: user.FindFirst("email")?.Value ?? string.Empty,
+            CustomerName: user.FindFirst("name")?.Value ?? string.Empty,
+            TotalAmount: order.Items.Sum(i => i.Price * i.Qty),
+            Items: order.Items
+                .Select(i => new OrderCreatedItem(
+                    i.ProductId,
+                    names.GetValueOrDefault(i.ProductId, "Product"),
+                    i.Qty,
+                    i.Price))
+                .ToList(),
+            CreatedAtUtc: DateTime.UtcNow);
+
+        // Same SaveChanges = same transaction: the order and its event commit together, or neither does.
+        db.OutboxMessages.Add(
+            OutboxMessage.Create(MessagingTopology.OrderCreatedRoutingKey, orderCreated));
+
         await db.SaveChangesAsync(cancellationToken);
 
         return OrderDto.Create(order);

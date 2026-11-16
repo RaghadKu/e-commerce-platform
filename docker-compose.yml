@@ -51,6 +51,25 @@ services:
       retries: 5
       start_period: 20s
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ecommerce-rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
   host:
     build:
       context: .
@@ -69,6 +88,10 @@ services:
       Seed__AdminEmail: ${SEED_ADMIN_EMAIL}
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD}
       Seed__CustomerPassword: ${SEED_CUSTOMER_PASSWORD}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: ${RABBITMQ_USER}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD}
     ports:
       - "8080:8080"
     depends_on:
@@ -78,6 +101,8 @@ services:
         condition: service_healthy  
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy  
 
   inventory:
     build:
@@ -96,3 +121,4 @@ services:
 volumes:
   sqlserver-data:
   sqlserver-replica-data:
+  rabbitmq-data:  
