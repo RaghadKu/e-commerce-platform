@@ -37,10 +37,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.env = .env
 		.env.example = .env.example
+		.gitattributes = .gitattributes
 		Directory.Build.props = Directory.Build.props
 		docker-compose.yml = docker-compose.yml
 		Dockerfile = Dockerfile
 		Dockerfile.inventory = Dockerfile.inventory
+		tools\replica\setup-replica.sh = tools\replica\setup-replica.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Users", "Users", "{338EADB9-0B95-4793-9338-AADC6439FC0B}"

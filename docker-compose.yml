@@ -39,6 +39,25 @@ services:
       retries: 10
       start_period: 20s
 
+  # NEW: one-shot job. Builds/verifies the replica, then exits (code 0 = success).
+  # It reuses the SQL Server image only because it already contains sqlcmd.
+  # tr removes Windows line endings so the script runs even if Git converted them.
+  replica-setup:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ecommerce-replica-setup
+    restart: "no"
+    entrypoint: ["/bin/bash", "-c", "tr -d '\\r' < /setup/setup-replica.sh > /tmp/setup-replica.sh && bash /tmp/setup-replica.sh"]
+    environment:
+      SA_PASSWORD: ${SA_PASSWORD}
+      AG_CERT_PASSWORD: ${AG_CERT_PASSWORD:-Cert@Pass12345}
+    volumes:
+      - ./tools/replica/setup-replica.sh:/setup/setup-replica.sh:ro
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      sqlserver-replica:
+        condition: service_healthy
+
   redis:
     image: redis:7.0.12-alpine
     container_name: ecommerce-redis
@@ -74,10 +93,12 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
-      sqlserver-replica:
-        condition: service_healthy  
       redis:
         condition: service_healthy
+      # CHANGED: replaces the old sqlserver-replica dependency. The host starts only
+      # after the replica, the group and consistency.Heartbeat exist.
+      replica-setup:
+        condition: service_completed_successfully
 
   inventory:
     build:
