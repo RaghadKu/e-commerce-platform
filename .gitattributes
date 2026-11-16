@@ -1,0 +1,2 @@
+# WHY: Windows Git may convert line endings to CRLF, and bash then fails on "\r".
+*.sh text eol=lf
