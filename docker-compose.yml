@@ -118,6 +118,7 @@ services:
       Email__FromAddress: shop@ecommerce.local
       Email__FromName: E-Commerce Shop
       Messaging__EmailWorkerEnabled: ${EMAIL_WORKER_ENABLED:-true}
+      Email__SimulateFailure: ${EMAIL_SIMULATE_FAILURE:-false}
     ports:
       - "8080:8080"
     depends_on:
