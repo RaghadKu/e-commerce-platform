@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using ECommerce.Modules.Notifications.Email;
+using ECommerce.Modules.Notifications.Infrastructure;
+using ECommerce.Modules.Notifications.Messaging;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ECommerce.Modules.Notifications;
@@ -8,7 +12,25 @@ public static class NotificationsModule
     public static IServiceCollection AddNotificationsModule(
         this IServiceCollection services, IConfiguration configuration)
     {
-        // Services will be registered here.
+        services.AddOptions<EmailOptions>()
+            .Bind(configuration.GetSection(EmailOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddDbContext<NotificationsDbContext>((sp, options) =>
+        {
+            var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("MainDb")
+                ?? throw new InvalidOperationException("Connection string 'MainDb' is not configured.");
+
+            options.UseSqlServer(connectionString, sql =>
+                sql.MigrationsHistoryTable("__EFMigrationsHistory", NotificationsDbContext.Schema));
+        });
+
+        services.AddScoped<IEmailSender, MailKitEmailSender>();
+
+        services.AddHostedService<NotificationsDbInitializer>();
+        services.AddHostedService<OrderCreatedEmailConsumer>();
+
         return services;
     }
 }
