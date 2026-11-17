@@ -143,6 +143,7 @@ app.UseMiddleware<ConsistencyMiddleware>();
 
 // Endpoints
 app.MapControllers();
+app.MapNotificationsHubs();
 app.MapHealthChecks("/health");
 
 app.Run();

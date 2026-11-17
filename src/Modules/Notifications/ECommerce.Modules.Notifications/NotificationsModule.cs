@@ -28,8 +28,12 @@ public static class NotificationsModule
 
         services.AddScoped<IEmailSender, MailKitEmailSender>();
 
+        services.AddSignalR();
+
+        // Order matters: migrate first, then start the consumers.
         services.AddHostedService<NotificationsDbInitializer>();
         services.AddHostedService<OrderCreatedEmailConsumer>();
+        services.AddHostedService<OrderRealtimeConsumer>();
 
         return services;
     }
