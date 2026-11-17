@@ -105,6 +105,24 @@ public static class UsersModule
                         NameClaimType = "name",
                         RoleClaimType = "role"
                     };
+
+                // SignalR: browsers cannot send an Authorization header on a WebSocket,
+                // so the token comes in the query string. Only for paths under /hubs.
+                bearer.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+
+                        if (!string.IsNullOrEmpty(accessToken)
+                            && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
         // Services
