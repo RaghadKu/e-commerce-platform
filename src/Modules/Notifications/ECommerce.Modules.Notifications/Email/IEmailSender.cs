@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ECommerce.Modules.Notifications.Email;
 
-namespace ECommerce.Modules.Notifications.Email
+internal interface IEmailSender
 {
-    internal interface IEmailSender
-    {
-    }
+    Task SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken ct);
 }

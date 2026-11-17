@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ECommerce.Modules.Notifications.Infrastructure;
 
-namespace ECommerce.Modules.Notifications.Infrastructure
+internal sealed class ProcessedMessage
 {
-    internal class ProcessedMessage
-    {
-    }
+    public Guid MessageId { get; set; }
+    public string Consumer { get; set; } = string.Empty;
+    public DateTime ProcessedAtUtc { get; set; }
 }
