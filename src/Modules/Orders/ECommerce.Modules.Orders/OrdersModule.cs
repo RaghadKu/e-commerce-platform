@@ -15,7 +15,9 @@ public static class OrdersModule
         this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
+
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IAdminOrderService, AdminOrderService>();
 
         services.AddDbContext<OrdersDbContext>((sp, options) =>
         {

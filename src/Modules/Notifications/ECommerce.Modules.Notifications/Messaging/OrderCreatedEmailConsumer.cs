@@ -21,6 +21,8 @@ internal sealed class OrderCreatedEmailConsumer(
     ILogger<OrderCreatedEmailConsumer> logger) : BackgroundService
 {
     private const string ConsumerName = "email.order-created";
+    private const string RetryCountHeader = "x-retry-count";
+    private const string LastErrorHeader = "x-last-error";
     private static readonly TimeSpan RetryConnectDelay = TimeSpan.FromSeconds(5);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -35,22 +37,24 @@ internal sealed class OrderCreatedEmailConsumer(
         {
             try
             {
-                // After this first connect, the client library reconnects by itself if the network drops.
                 await using var connection = await connectionFactory.CreateConnectionAsync(stoppingToken);
                 await using var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-                // Safe to repeat. Makes sure the queue exists even if we start first.
-                await MessagingTopology.DeclareAsync(channel, stoppingToken);
+                await using var publishChannel = await connection.CreateChannelAsync(
+                    new CreateChannelOptions(
+                        publisherConfirmationsEnabled: true,
+                        publisherConfirmationTrackingEnabled: true),
+                    stoppingToken);
 
-                // Prefetch 1: RabbitMQ sends the next message only after we ACK the current one.
+                await MessagingTopology.DeclareAsync(channel, stoppingToken);
                 await channel.BasicQosAsync(0, 1, false, stoppingToken);
 
                 var consumer = new AsyncEventingBasicConsumer(channel);
-                consumer.ReceivedAsync += (_, ea) => HandleAsync(channel, ea, stoppingToken);
+                consumer.ReceivedAsync += (_, ea) => HandleAsync(channel, publishChannel, ea, stoppingToken);
 
                 await channel.BasicConsumeAsync(
                     MessagingTopology.EmailOrderCreatedQueue,
-                    autoAck: false,              // WE decide when the message is done
+                    autoAck: false,
                     consumer: consumer,
                     cancellationToken: stoppingToken);
 
@@ -72,11 +76,11 @@ internal sealed class OrderCreatedEmailConsumer(
         logger.LogInformation("Email worker stopped.");
     }
 
-    private async Task HandleAsync(IChannel channel, BasicDeliverEventArgs ea, CancellationToken ct)
+    private async Task HandleAsync(
+        IChannel channel, IChannel publishChannel, BasicDeliverEventArgs ea, CancellationToken ct)
     {
         try
         {
-            // A message without a valid id or body can never succeed. Do not retry it.
             if (!Guid.TryParse(ea.BasicProperties.MessageId, out var messageId))
             {
                 logger.LogError("Message has no valid MessageId. Rejecting.");
@@ -96,7 +100,6 @@ internal sealed class OrderCreatedEmailConsumer(
             var db = scope.ServiceProvider.GetRequiredService<NotificationsDbContext>();
             var sender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
 
-            // 1. Duplicate check.
             var already = await db.ProcessedMessages
                 .AnyAsync(p => p.MessageId == messageId && p.Consumer == ConsumerName, ct);
 
@@ -107,11 +110,9 @@ internal sealed class OrderCreatedEmailConsumer(
                 return;
             }
 
-            // 2. Send the email. If this throws, we do NOT ACK.
             var (subject, html) = OrderConfirmationEmail.Build(orderEvent);
             await sender.SendAsync(orderEvent.CustomerEmail, orderEvent.CustomerName, subject, html, ct);
 
-            // 3. Record it, so a repeated message is skipped.
             db.ProcessedMessages.Add(new ProcessedMessage
             {
                 MessageId = messageId,
@@ -128,23 +129,98 @@ internal sealed class OrderCreatedEmailConsumer(
                 // Another copy recorded it first. Fine.
             }
 
-            // 4. Only now tell RabbitMQ we are done.
             await channel.BasicAckAsync(ea.DeliveryTag, multiple: false, ct);
             logger.LogInformation("Message {MessageId} processed for order {OrderId}.", messageId, orderEvent.OrderId);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            // The host is stopping. No ACK: RabbitMQ will deliver this message again.
         }
         catch (Exception ex)
         {
-            // TEMPORARY (Step 4 adds retries): a failed message goes straight to the DLQ.
-            logger.LogError(ex, "Processing failed. Sending the message to the dead letter queue.");
-            try { await RejectAsync(channel, ea, ct); } catch { /* channel is gone, RabbitMQ requeues it */ }
+            await HandleFailureAsync(channel, publishChannel, ea, ex, ct);
         }
     }
 
-    // NACK with requeue=false: RabbitMQ moves the message to the dead letter exchange.
+    /// <summary>
+    /// Failure 1 and 2: copy the message to a wait queue (10 s, then 30 s).
+    /// Failure 3: copy it to the dead letter exchange (the DLQ).
+    /// The original is ACKed only after the copy is safely stored.
+    /// </summary>
+    private async Task HandleFailureAsync(
+        IChannel channel, IChannel publishChannel, BasicDeliverEventArgs ea, Exception error, CancellationToken ct)
+    {
+        var retriesSoFar = GetRetryCount(ea.BasicProperties);
+        var reason = error.Message.Length > 500 ? error.Message[..500] : error.Message;
+
+        try
+        {
+            if (retriesSoFar < MessagingTopology.EmailRetryQueues.Length)
+            {
+                var (queue, delayMs) = MessagingTopology.EmailRetryQueues[retriesSoFar];
+
+                await PublishCopyAsync(publishChannel, ea, exchange: "", routingKey: queue, retriesSoFar + 1, reason, ct);
+
+                logger.LogWarning(error,
+                    "Attempt {Attempt} failed for message {MessageId}. Retrying in {Seconds}s.",
+                    retriesSoFar + 1, ea.BasicProperties.MessageId, delayMs / 1000);
+            }
+            else
+            {
+                await PublishCopyAsync(
+                    publishChannel, ea,
+                    exchange: MessagingTopology.DeadLetterExchange,
+                    routingKey: MessagingTopology.EmailOrderCreatedQueue,
+                    retriesSoFar, reason, ct);
+
+                logger.LogError(error,
+                    "Message {MessageId} failed {Attempts} times. Moved to the dead letter queue.",
+                    ea.BasicProperties.MessageId, retriesSoFar + 1);
+            }
+
+            await channel.BasicAckAsync(ea.DeliveryTag, multiple: false, ct);
+        }
+        catch (Exception publishError)
+        {
+            logger.LogError(publishError, "Could not republish message {MessageId}. Requeueing it.", ea.BasicProperties.MessageId);
+            try { await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true, ct); }
+            catch { /* channel is gone, RabbitMQ requeues it */ }
+        }
+    }
+
+    private static Task PublishCopyAsync(
+        IChannel publishChannel, BasicDeliverEventArgs ea,
+        string exchange, string routingKey, int retryCount, string reason, CancellationToken ct)
+    {
+        var properties = new BasicProperties
+        {
+            Persistent = true,
+            MessageId = ea.BasicProperties.MessageId,
+            Type = ea.BasicProperties.Type,
+            ContentType = ea.BasicProperties.ContentType,
+            Headers = new Dictionary<string, object?>
+            {
+                [RetryCountHeader] = retryCount,
+                [LastErrorHeader] = reason
+            }
+        };
+
+        return publishChannel.BasicPublishAsync(
+            exchange, routingKey, mandatory: false, basicProperties: properties,
+            body: ea.Body, cancellationToken: ct).AsTask();
+    }
+
+    private static int GetRetryCount(IReadOnlyBasicProperties properties)
+    {
+        if (properties.Headers is not null
+            && properties.Headers.TryGetValue(RetryCountHeader, out var value)
+            && value is not null)
+        {
+            try { return Convert.ToInt32(value); } catch { return 0; }
+        }
+
+        return 0;
+    }
+
     private static ValueTask RejectAsync(IChannel channel, BasicDeliverEventArgs ea, CancellationToken ct)
         => channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false, ct);
 

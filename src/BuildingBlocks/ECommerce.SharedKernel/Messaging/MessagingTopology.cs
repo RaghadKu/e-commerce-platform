@@ -8,9 +8,18 @@ public static class MessagingTopology
     public const string DeadLetterExchange = "ecommerce.dlx";
 
     public const string OrderCreatedRoutingKey = "order.created";
+    public const string OrderStatusChangedRoutingKey = "order.status-changed";
 
     public const string EmailOrderCreatedQueue = "email.order-created";
     public const string EmailOrderCreatedDlq = "email.order-created.dlq";
+
+    public static readonly (string Queue, int DelayMs)[] EmailRetryQueues =
+    [
+        ("email.order-created.retry.10s", 10_000),
+        ("email.order-created.retry.30s", 30_000)
+    ];
+
+    public const string RealtimeOrderEventsQueue = "realtime.order-events";
 
     public static async Task DeclareAsync(IChannel channel, CancellationToken ct)
     {
@@ -38,5 +47,31 @@ public static class MessagingTopology
 
         await channel.QueueBindAsync(
             EmailOrderCreatedQueue, EventsExchange, routingKey: OrderCreatedRoutingKey, cancellationToken: ct);
+
+        foreach (var (queue, delayMs) in EmailRetryQueues)
+        {
+            var retryArguments = new Dictionary<string, object?>
+            {
+                ["x-message-ttl"] = delayMs,
+                ["x-dead-letter-exchange"] = "",
+                ["x-dead-letter-routing-key"] = EmailOrderCreatedQueue
+            };
+
+            await channel.QueueDeclareAsync(
+                queue, durable: true, exclusive: false, autoDelete: false,
+                arguments: retryArguments, cancellationToken: ct);
+        }
+
+        var realtimeArguments = new Dictionary<string, object?> { ["x-message-ttl"] = 60_000 };
+
+        await channel.QueueDeclareAsync(
+            RealtimeOrderEventsQueue, durable: true, exclusive: false, autoDelete: false,
+            arguments: realtimeArguments, cancellationToken: ct);
+
+        await channel.QueueBindAsync(
+            RealtimeOrderEventsQueue, EventsExchange, routingKey: OrderCreatedRoutingKey, cancellationToken: ct);
+
+        await channel.QueueBindAsync(
+            RealtimeOrderEventsQueue, EventsExchange, routingKey: OrderStatusChangedRoutingKey, cancellationToken: ct);
     }
 }
