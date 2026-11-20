@@ -28,7 +28,14 @@ public static class NotificationsModule
 
         services.AddScoped<IEmailSender, MailKitEmailSender>();
 
-        services.AddSignalR();
+
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        var signalRBuilder = services.AddSignalR();
+
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            signalRBuilder.AddStackExchangeRedis(redisConnectionString);
+        }
 
         // Order matters: migrate first, then start the consumers.
         services.AddHostedService<NotificationsDbInitializer>();
