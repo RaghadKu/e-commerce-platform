@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="MailKit" Version="5.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="9.0.23" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.23">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
