@@ -7,7 +7,7 @@ public interface IOrderService
     Task<OrderDto> AddItemAsync(AddOrderItemRequest request, CancellationToken ct);
     Task<OrderDto> RemoveItemAsync(Guid orderItemId, CancellationToken ct);
     Task<OrderDto> UpdateItemAsync(UpdateOrderItemRequest request, CancellationToken ct);
-    Task<PagedResult<OrderDto>> GetAllAsync(OrderQuery input, CancellationToken cancellationToken);
+    Task<PagedResult<OrderDto>> GetAllAsync(CustomerOrderQuery input, CancellationToken ct);
     Task<OrderDto> GetByIdAsync(Guid Id, CancellationToken ct);
     Task<OrderDto> CheckoutAsync(CancellationToken cancellationToken);
     Task<OrderDto> ConfirmAsync(CancellationToken cancellationToken);

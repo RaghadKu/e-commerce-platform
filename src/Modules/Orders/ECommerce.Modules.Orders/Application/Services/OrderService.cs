@@ -23,8 +23,7 @@ internal class OrderService(
     IInventoryServiceClient inventoryServiceClient) : IOrderService
 {
     private readonly Guid UserId = httpContextAccessor!.HttpContext!.User.GetUserId();
-    private readonly bool isAdmin = httpContextAccessor!.HttpContext!.User.IsAdmin();
-   
+
     // Managing order items
     #region
 
@@ -143,7 +142,7 @@ internal class OrderService(
     #region
 
     public async Task<PagedResult<OrderDto>> GetAllAsync(
-        OrderQuery input,
+        CustomerOrderQuery input,
         CancellationToken cancellationToken)
     {
         var page = Math.Max(1, input.Page);
@@ -155,14 +154,9 @@ internal class OrderService(
                 ? readDb
                 : db;
 
-        // Build the query.
-        var query = source.Orders.AsNoTracking();
-
-        // Filtering
-        if (input.UserId.HasValue)
-        {
-            query = query.Where(o => o.UserId == input.UserId.Value);
-        }
+        var query = source.Orders
+            .AsNoTracking()
+            .Where(o => o.UserId == UserId && o.Status != OrderStatus.Draft);
 
         if (!string.IsNullOrWhiteSpace(input.Status))
         {
@@ -175,11 +169,11 @@ internal class OrderService(
             query = query.Where(o => o.Status == statusEnum);
         }
 
-        // Total count before pagination.
+        // Count before Include so the count query doesn't carry an unnecessary join.
         var total = await query.CountAsync(cancellationToken);
 
-        // Pagination
         var ordersPage = await query
+            .Include(o => o.Items)
             .OrderByDescending(o => o.UpdatedAtUtc)
             .ThenByDescending(o => o.CreatedAtUtc)
             .Skip((page - 1) * pageSize)
@@ -193,14 +187,13 @@ internal class OrderService(
             total);
     }
 
-
     public async Task<OrderDto> GetByIdAsync(Guid Id, CancellationToken ct)
     {
         OrdersDbContext source = await router.UseReplicaAsync(ct) ? readDb : db;
 
         var order = await source.Orders.AsNoTracking()
             .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.Id == Id && (o.UserId == UserId || isAdmin), ct)
+            .FirstOrDefaultAsync(o => o.Id == Id && o.UserId == UserId, ct)
             ?? throw new NotFoundException($"Order with id {Id} not found");
 
         return OrderDto.Create(order);
@@ -283,9 +276,9 @@ internal class OrderService(
     {
         var order = await db.Orders
             .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => (o.UserId == UserId || isAdmin) && o.Status == OrderStatus.Pending, cancellationToken)
+            .FirstOrDefaultAsync(o => o.UserId == UserId && o.Status == OrderStatus.Pending, cancellationToken)
             ?? throw new NotFoundException($"No pending Order to cancel");
-        
+
         await inventoryServiceClient.ReleaseStockAsync(order.Id, cancellationToken);
 
         order.Status = OrderStatus.Cancelled;

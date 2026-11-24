@@ -1,5 +1,6 @@
 ﻿using ECommerce.Modules.Orders.Application;
 using ECommerce.Modules.Orders.Application.Services;
+using ECommerce.SharedKernel.Pagination;
 using ECommerce.SharedKernel.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ECommerce.Modules.Orders.Api;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = AppRoles.Customer)]
 [Route("api/orders")]
 public class OrdersController(IOrderService orderService) : ControllerBase
 {
@@ -37,8 +38,8 @@ public class OrdersController(IOrderService orderService) : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = AppRoles.Admin)]
-    public async Task<IActionResult> GetAll([FromQuery] OrderQuery input, CancellationToken ct)
+    [ProducesResponseType<PagedResult<OrderDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll([FromQuery] CustomerOrderQuery input, CancellationToken ct)
     {
         return Ok(await orderService.GetAllAsync(input, ct));
     }
