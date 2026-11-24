@@ -51,6 +51,17 @@ internal sealed class AdminOrderService(
         return new PagedResult<OrderDto>(items.Select(OrderDto.Create).ToList(), page, pageSize, total);
     }
 
+    public async Task<OrderDto> GetByIdAsync(Guid orderId, CancellationToken ct)
+    {
+        var order = await db.Orders
+            .AsNoTracking()
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == orderId && o.Status != OrderStatus.Draft, ct)
+            ?? throw new NotFoundException($"Order with id {orderId} not found");
+
+        return OrderDto.Create(order);
+    }
+
     public async Task<OrderDto> ChangeStatusAsync(Guid orderId, UpdateOrderStatusRequest request, CancellationToken ct)
     {
         if (!Enum.TryParse<OrderStatus>(request.Status, ignoreCase: true, out var newStatus)

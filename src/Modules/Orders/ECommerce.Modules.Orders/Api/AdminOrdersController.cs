@@ -18,6 +18,14 @@ public class AdminOrdersController(IAdminOrderService orders) : ControllerBase
     public async Task<IActionResult> GetAll([FromQuery] OrderQuery query, CancellationToken ct)
         => Ok(await orders.GetAllAsync(query, ct));
 
+    [HttpGet("{orderId:guid}")]
+    [ProducesResponseType<OrderDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> GetById(Guid orderId, CancellationToken ct)
+    {
+        return Ok(await orders.GetByIdAsync(orderId, ct));
+    }
+
     [HttpPut("{id:guid}/status")]
     [ProducesResponseType<OrderDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
